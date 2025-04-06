@@ -1,12 +1,24 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FileUp, AlertCircle, FileText, Upload, Loader2, Send, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SUPPORTED_FILE_TYPES, MAX_FILE_SIZE } from './config';
 
 // Export config for Next.js to recognize this as a dynamic page
 export { dynamic, dynamicParams, revalidate } from './config';
+
+// Add animation styles
+const animationStyles = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+`;
 
 interface QAPair {
   question: string;
@@ -28,6 +40,19 @@ export default function DocumentAnalyzerPage() {
   const [documentText, setDocumentText] = useState<string>('');
   const questionInputRef = useRef<HTMLInputElement>(null);
   const qaHistoryRef = useRef<HTMLDivElement>(null);
+
+  // Inject animation styles
+  useEffect(() => {
+    // Create and append style element
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = animationStyles;
+    document.head.appendChild(styleElement);
+    
+    // Clean up on unmount
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
 
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,29 +263,149 @@ export default function DocumentAnalyzerPage() {
       const headers = output.match(/─{3} .+ ─{3}/g) || [];
       
       if (headers.length === 0) {
-        // If no headers found, return the raw output
-        return <div className="whitespace-pre-wrap">{output}</div>;
+        // If no headers found, return the raw output with improved styling
+        return (
+          <div className="bg-white rounded-xl border border-amber-100 shadow-sm p-6">
+            <div className="prose prose-amber prose-headings:text-amber-700 prose-p:text-gray-700 prose-strong:text-amber-800 max-w-none whitespace-pre-wrap">
+              {output}
+            </div>
+          </div>
+        );
       }
       
       return (
-        <div className="space-y-6">
-          {headers.map((header, i) => (
-            <div key={i} className="space-y-2">
-              <h3 className="text-lg font-semibold text-amber-800 border-b border-amber-200 pb-2">
-                {header.replace(/─{3} (.+) ─{3}/, '$1')}
-              </h3>
-              <div className="whitespace-pre-wrap text-gray-700 pl-4">
-                {sections[i+1]?.trim()}
+        <div className="space-y-8">
+          {headers.map((header, i) => {
+            const sectionTitle = header.replace(/─{3} (.+) ─{3}/, '$1');
+            const sectionContent = sections[i+1]?.trim() || '';
+            
+            // Format content based on section type
+            let formattedContent;
+            if (sectionTitle === 'DOCUMENT SUMMARY' || sectionTitle === 'KEY INFORMATION') {
+              // Format bullet points and key-value pairs
+              formattedContent = sectionContent.split('\n').map((line, idx) => {
+                const bulletMatch = line.match(/^[•\-*]\s+(.+?):\s*(.+)$/);
+                if (bulletMatch) {
+                  // This is a key-value bullet point
+                  return (
+                    <div key={idx} className="flex py-2 items-start">
+                      <div className="text-amber-500 mr-2">•</div>
+                      <div className="font-medium text-amber-900 mr-2">{bulletMatch[1]}:</div>
+                      <div className="text-gray-700">{bulletMatch[2]}</div>
+                    </div>
+                  );
+                } else if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
+                  // Regular bullet point
+                  return (
+                    <div key={idx} className="flex py-1 items-start">
+                      <div className="text-amber-500 mr-2">•</div>
+                      <div className="text-gray-700">{line.replace(/^[•\-*]\s+/, '')}</div>
+                    </div>
+                  );
+                } else if (line.trim() !== '') {
+                  // Regular paragraph
+                  return <p key={idx} className="py-1 text-gray-700">{line}</p>;
+                }
+                return null;
+              });
+            } else {
+              // Format numbered lists and regular content
+              formattedContent = sectionContent.split('\n').map((line, idx) => {
+                const numberedMatch = line.match(/^(\d+)\.\s+(.+?):\s*(.+)$/);
+                if (numberedMatch) {
+                  // Numbered item with key-value pair
+                  return (
+                    <div key={idx} className="flex py-2 items-start">
+                      <div className="text-amber-600 font-medium mr-2">{numberedMatch[1]}.</div>
+                      <div className="font-medium text-amber-900 mr-2">{numberedMatch[2]}:</div>
+                      <div className="text-gray-700">{numberedMatch[3]}</div>
+                    </div>
+                  );
+                } else if (line.match(/^(\d+)\.\s+(.+)$/)) {
+                  // Simple numbered item
+                  const match = line.match(/^(\d+)\.\s+(.+)$/);
+                  return (
+                    <div key={idx} className="flex py-1 items-start">
+                      <div className="text-amber-600 font-medium mr-2">{match![1]}.</div>
+                      <div className="text-gray-700">{match![2]}</div>
+                    </div>
+                  );
+                } else if (line.trim() !== '') {
+                  // Regular paragraph
+                  return <p key={idx} className="py-1 text-gray-700">{line}</p>;
+                }
+                return null;
+              });
+            }
+            
+            return (
+              <div key={i} className="bg-white rounded-xl border border-amber-100 shadow-sm overflow-hidden">
+                <div className="bg-amber-50 border-b border-amber-100 px-6 py-4">
+                  <h3 className="text-lg font-semibold text-amber-800">
+                    {sectionTitle}
+                  </h3>
+                </div>
+                <div className="p-6 space-y-2">
+                  {formattedContent}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       );
     } catch (error) {
       console.error('Error formatting analysis output:', error);
       // Return raw output if formatting fails
-      return <div className="whitespace-pre-wrap">{output}</div>;
+      return (
+        <div className="bg-white rounded-xl border border-amber-100 shadow-sm p-6">
+          <div className="prose prose-amber prose-headings:text-amber-700 prose-p:text-gray-700 prose-strong:text-amber-800 max-w-none whitespace-pre-wrap">
+            {output}
+          </div>
+        </div>
+      );
     }
+  };
+
+  // Format code snippets in answers
+  const formatCodeSnippets = (text: string) => {
+    // Regular expression to match code blocks
+    const codeBlockRegex = /```(?:(\w+))?\n([\s\S]*?)```/g;
+    
+    // Split text by code blocks and normal text
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = codeBlockRegex.exec(text)) !== null) {
+      // Add text before code block
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      
+      // Add formatted code block
+      const language = match[1] || '';
+      const code = match[2];
+      
+      parts.push(
+        <div key={match.index} className="code-snippet my-4 rounded-lg overflow-hidden border border-amber-200 bg-amber-50/50">
+          {language && (
+            <div className="text-xs bg-amber-100 text-amber-800 px-4 py-1 font-mono tracking-wide">
+              {language}
+            </div>
+          )}
+          <pre className="overflow-x-auto p-4 text-sm font-mono text-gray-800 bg-white/80">{code}</pre>
+        </div>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add any remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+    
+    return parts.length > 0 ? <>{parts}</> : text;
   };
 
   return (
@@ -273,144 +418,152 @@ export default function DocumentAnalyzerPage() {
         </p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md border border-amber-100 p-6">
+      <div className="bg-white rounded-xl shadow-md border border-amber-100 p-6 md:p-8">
         {/* File Upload Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-amber-700 mb-4">Upload Document</h2>
+        <div className="mb-8 max-w-3xl mx-auto">
+          <h2 className="text-xl font-semibold text-amber-700 mb-6 flex items-center gap-2 text-center justify-center">
+            <FileUp className="h-5 w-5 text-amber-600" />
+            Upload Document
+          </h2>
           
           <div 
             className={cn(
-              "border-2 border-dashed rounded-lg p-8 transition-all text-center",
-              dragging ? "border-amber-400 bg-amber-50" : "border-gray-200 hover:border-amber-300",
+              "document-drop-zone rounded-xl md:p-12 p-8 transition-all text-center border-2 border-dashed bg-amber-50/50",
+              dragging ? "border-amber-400 bg-amber-50/80" : "border-amber-200",
               error ? "border-red-300 bg-red-50" : ""
             )}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <div className="flex flex-col items-center justify-center gap-3">
+            <div className="flex flex-col items-center justify-center gap-6 max-w-md mx-auto py-4">
               {file ? (
                 <>
-                  <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-amber-600" />
+                  <div className="h-20 w-20 rounded-full bg-amber-100 flex items-center justify-center">
+                    <FileText className="h-10 w-10 text-amber-600" />
                   </div>
-                  <div className="text-sm font-medium text-gray-900">{file.name}</div>
-                  <div className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</div>
+                  <div>
+                    <div className="text-lg font-medium text-gray-900">{file.name}</div>
+                    <div className="text-sm text-gray-500 mt-1">{(file.size / 1024).toFixed(1)} KB</div>
+                  </div>
                 </>
               ) : (
                 <>
-                  <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
-                    <FileUp className="h-6 w-6 text-gray-500" />
+                  <div className="h-20 w-20 rounded-full bg-amber-50 flex items-center justify-center">
+                    <FileUp className="h-10 w-10 text-amber-500" />
                   </div>
-                  <div className="text-sm font-medium text-gray-700">
-                    Drag and drop your document or click to browse
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Supports {SUPPORTED_FILE_TYPES.map(t => t.name).join(', ')} files
+                  <div className="space-y-2">
+                    <div className="text-xl font-medium text-gray-800">
+                      Drag and drop your document or click to browse
+                    </div>
+                    <div className="text-base text-gray-500">
+                      Supports {SUPPORTED_FILE_TYPES.map(t => t.name).join(', ')} files
+                    </div>
                   </div>
                 </>
               )}
               
               {error && (
-                <div className="flex items-center text-red-500 text-sm mt-2">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {error}
+                <div className="flex items-center text-red-500 text-sm mt-2 bg-red-50 px-4 py-2 rounded-md w-full">
+                  <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span>{error}</span>
                 </div>
               )}
-              
-              <label className="mt-4 inline-block">
-  <input 
-    type="file" 
-    accept={SUPPORTED_FILE_TYPES.map(t => t.extension).join(',')} 
-    onChange={handleFileChange}
-    className="hidden" 
-  />
-  <div className="cursor-pointer py-2 px-4 rounded-md bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors text-sm font-medium">
-    Browse Files
-  </div>
-</label>
-
-    
-
             </div>
           </div>
           
-          <div className="mt-6 flex justify-center">
-            <button
-              onClick={handleAnalyze}
-              disabled={!file || isUploading}
-              className={cn(
-                "flex items-center gap-2 py-2 px-6 rounded-md font-medium transition-colors",
-                !file ? "bg-gray-300 text-gray-500 cursor-not-allowed" : 
-                  isUploading ? "bg-amber-100 text-amber-700 cursor-wait border border-amber-300" : 
-                  "bg-amber-600 hover:bg-amber-700 text-white"
-              )}
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
-                  <span>Processing Document...</span>
-                </>
-              ) : (
-                <>
-                  <Upload className="h-5 w-5" />
-                  <span>Analyze Document</span>
-                </>
-              )}
-            </button>
-          </div>
+          <div className="flex flex-col items-center mt-6">
+  <div className="w-64">
+    <label className="block">
+      <input 
+        type="file" 
+        accept={SUPPORTED_FILE_TYPES.map(t => t.extension).join(',')} 
+        onChange={handleFileChange}
+        className="sr-only"
+      />
+      <div className="py-3 px-4 bg-amber-500 text-white text-center rounded-md cursor-pointer font-medium hover:bg-amber-600 transition-colors shadow-md">
+        Browse Files
+      </div>
+    </label>
+  </div>
+  
+  {file && (
+    <div className="mt-4">
+      <button
+        onClick={handleAnalyze}
+        disabled={isUploading}
+        className={cn(
+          "analyze-button flex items-center justify-center gap-3 py-3 px-8 rounded-md font-medium transition-colors shadow-sm",
+          isUploading 
+            ? "bg-amber-100 text-amber-700 cursor-wait border border-amber-300" 
+            : "bg-amber-600 hover:bg-amber-700 text-white hover:shadow-md"
+        )}
+      >
+        {isUploading ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Processing...</span>
+          </>
+        ) : (
+          <>
+            <Upload className="h-5 w-5" />
+            <span>Analyze Document</span>
+          </>
+        )}
+      </button>
+    </div>
+  )}
+</div>
         </div>
         
         {/* Results Section */}
         {result && (
-          <div className="mt-8 border-t border-gray-200 pt-8">
+          <div className="mt-10 border-t border-gray-200 pt-8 document-analysis-section">
             <h2 className="text-xl font-semibold text-amber-700 mb-6 flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+              <FileText className="h-5 w-5 text-amber-600" />
               Analysis Results
             </h2>
             
-            <div className="bg-amber-50 rounded-lg p-6 border border-amber-100">
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-amber-500 uppercase">Document Information</h3>
-                <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">Filename:</span>{' '}
-                    <span className="text-gray-600">{result.filename}</span>
+            <div className="analysis-result-container bg-amber-50/30 rounded-xl p-6 md:p-8">
+              <div className="mb-8 bg-white rounded-xl border border-amber-100 shadow-sm p-6">
+                <h3 className="text-sm font-medium text-amber-600 uppercase tracking-wide mb-4">Document Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                  <div className="flex flex-col bg-amber-50 p-4 rounded-md border border-amber-100">
+                    <span className="font-medium text-amber-900 mb-1">Filename</span>
+                    <span className="text-gray-700">{result.filename}</span>
                   </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Analyzed:</span>{' '}
-                    <span className="text-gray-600">
+                  <div className="flex flex-col bg-amber-50 p-4 rounded-md border border-amber-100">
+                    <span className="font-medium text-amber-900 mb-1">Analyzed</span>
+                    <span className="text-gray-700">
                       {new Date(result.timestamp).toLocaleString()}
                     </span>
                   </div>
                 </div>
               </div>
               
-              <div className="prose prose-amber max-w-none">
-                {formatAnalysisOutput(result.analysis)}
-              </div>
+              {formatAnalysisOutput(result.analysis)}
             </div>
             
             {/* Q&A Section */}
             <div className="mt-10">
               <h2 className="text-xl font-semibold text-amber-700 mb-6 flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Ask Questions
+                <MessageSquare className="h-5 w-5 text-amber-600" />
+                Ask Questions About This Document
               </h2>
               
-              <div className="bg-white rounded-lg border border-amber-100 overflow-hidden">
+              <div className="bg-white rounded-xl border border-amber-100 overflow-hidden shadow-sm">
                 {/* Q&A History */}
                 <div 
                   ref={qaHistoryRef}
-                  className="p-5 max-h-96 overflow-y-auto"
-                  style={{ minHeight: qaHistory.length > 0 ? '16rem' : '0' }}
+                  className="p-5 max-h-[32rem] overflow-y-auto"
+                  style={{ minHeight: qaHistory.length > 0 ? '20rem' : '12rem' }}
                 >
                   {qaHistory.length > 0 ? (
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                       {qaHistory.map((qa, index) => (
-                        <div key={index} className="space-y-2">
+                        <div key={index} className="space-y-4 qa-message animate-fadeIn" style={{ animationDelay: `${index * 0.1}s` }}>
                           <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1 shadow-sm border border-amber-200">
                               <span className="text-amber-700 text-xs font-medium">You</span>
                             </div>
                             <div className="flex-1">
@@ -421,46 +574,54 @@ export default function DocumentAnalyzerPage() {
                             </div>
                           </div>
                           
-                          <div className="flex items-start gap-3 mt-3">
-                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-1">
-                              <span className="text-gray-700 text-xs font-medium">AI</span>
+                          <div className="flex items-start gap-3 mt-3 pl-6">
+                            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0 mt-1 shadow-sm border border-amber-100">
+                              <span className="text-amber-700 text-xs font-medium">AI</span>
                             </div>
-                            <div className="flex-1 bg-gray-50 p-4 rounded-lg">
-                              <div className="whitespace-pre-wrap text-gray-700">{qa.answer}</div>
-                              {qa.modelUsed && (
-                                <div className="mt-2 text-xs text-gray-500">
-                                  {qa.modelUsed.includes('local-search') ? (
-                                    <div className="flex items-center">
-                                      <AlertCircle className="h-3 w-3 mr-1 text-amber-500" />
-                                      <span>Basic search used due to API unavailability</span>
-                                    </div>
-                                  ) : (
-                                    <span>Powered by {qa.modelUsed}</span>
-                                  )}
+                            <div className="flex-1">
+                              <div className="bg-amber-50 p-4 rounded-lg border border-amber-100 shadow-sm">
+                                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                                  {qa.answer.includes('```') ? formatCodeSnippets(qa.answer) : qa.answer}
                                 </div>
-                              )}
+                                {qa.modelUsed && (
+                                  <div className="mt-3 pt-2 border-t border-amber-100 text-xs text-amber-600">
+                                    {qa.modelUsed.includes('local-search') ? (
+                                      <div className="flex items-center">
+                                        <AlertCircle className="h-3 w-3 mr-1 text-amber-500" />
+                                        <span>Basic search used due to API unavailability</span>
+                                      </div>
+                                    ) : (
+                                      <span>Powered by {qa.modelUsed}</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      Ask questions about your document to get specific insights
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center py-8 px-4 text-gray-500 max-w-md">
+                        <MessageSquare className="h-12 w-12 text-amber-300 mx-auto mb-3" />
+                        <p className="text-lg font-medium text-amber-700 mb-2">Ask Questions About Your Document</p>
+                        <p className="text-sm text-amber-600/70">Get specific insights and clarifications by asking questions related to the analyzed document content.</p>
+                      </div>
                     </div>
                   )}
                 </div>
                 
                 {/* Question Input */}
-                <div className="border-t border-amber-100 p-4">
+                <div className="border-t border-amber-100 p-4 bg-amber-50/50">
                   {qaError && (
-                    <div className="mb-3 text-red-500 text-sm flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      {qaError}
+                    <div className="mb-3 text-red-500 text-sm flex items-center bg-red-50 p-3 rounded-lg border border-red-100">
+                      <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span>{qaError}</span>
                     </div>
                   )}
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <input
                       ref={questionInputRef}
                       type="text"
@@ -468,23 +629,23 @@ export default function DocumentAnalyzerPage() {
                       onChange={(e) => setQuestion(e.target.value)}
                       onKeyDown={handleQuestionKeyDown}
                       placeholder="Ask a question about this document..."
-                      className="flex-1 border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      className="flex-1 border border-amber-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white shadow-sm"
                       disabled={isAskingQuestion}
                     />
                     <button
                       onClick={handleAskQuestion}
                       disabled={isAskingQuestion || !question.trim()}
                       className={cn(
-                        "flex items-center gap-2 py-2 px-4 rounded-md text-white transition-colors",
+                        "flex items-center gap-2 py-3 px-6 rounded-lg font-medium transition-colors shadow-sm",
                         question.trim() && !isAskingQuestion
-                          ? "bg-amber-600 hover:bg-amber-700"
-                          : "bg-gray-300 cursor-not-allowed"
+                          ? "bg-amber-600 hover:bg-amber-700 text-white"
+                          : "bg-amber-100 text-amber-400 cursor-not-allowed border border-amber-200"
                       )}
                     >
                       {isAskingQuestion ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-5 w-5 animate-spin" />
                       ) : (
-                        <Send className="h-4 w-4" />
+                        <Send className="h-5 w-5" />
                       )}
                       <span>Ask</span>
                     </button>

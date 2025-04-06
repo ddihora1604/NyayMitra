@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { User, Bot, Mic, Volume2, Send, Loader2 } from "lucide-react";
+import { User, Bot, Mic, Volume2, Send, Loader2, MicOff, Square } from "lucide-react";
 import styles from "../app/chatbot/styles.module.css";
+import useSpeechRecognition from "@/lib/hooks/useSpeechRecognition";
+import useSpeechSynthesis from "@/lib/hooks/useSpeechSynthesis";
 
 // Import API key from environment
 import { GROQ_API_KEY } from "../secrets/env.js";
@@ -22,68 +24,48 @@ const Chatbot = () => {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [listening, setListening] = useState(false);
-  const recognitionRef = useRef(null);
-  const chatContainerRef = useRef(null);
-  const [speechSupported, setSpeechSupported] = useState(false);
   const [apiError, setApiError] = useState(false);
+  const [speechFeedback, setSpeechFeedback] = useState("");
+  const chatContainerRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Default language (auto-switching enabled)
   const [language, setLanguage] = useState("en-IN");
 
-  const sanitizeMarkdownForSpeech = (markdown) => {
-    return markdown
-      .replace(/^={2,}|-{2,}/gm, "")
-      .replace(/[*_`>#]/g, "")
-      .replace(/\[(.*?)\]\(.*?\)/g, "$1")
-      .replace(/\n+/g, ". ")
-      .trim();
-  };
-
-  // Initialize speech recognition
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Check if speech recognition is available
-      const hasSpeechRecognition = 'webkitSpeechRecognition' in window || 
-                                  'SpeechRecognition' in window;
-      
-      setSpeechSupported(hasSpeechRecognition);
-      
-      if (hasSpeechRecognition) {
-        try {
-          // Use the appropriate speech recognition constructor
-          const SpeechRecognition = window.webkitSpeechRecognition || 
-                                   window.SpeechRecognition;
-          
-          recognitionRef.current = new SpeechRecognition();
-          recognitionRef.current.continuous = true;
-          recognitionRef.current.interimResults = true;
-          recognitionRef.current.lang = language;
-    
-          recognitionRef.current.onresult = (event) => {
-            const transcript = Array.from(event.results)
-              .map(result => result[0])
-              .map(result => result.transcript)
-              .join('');
-              
-            setInput(transcript);
-          };
-    
-          recognitionRef.current.onerror = (event) => {
-            console.error("Speech recognition error:", event.error);
-            setListening(false);
-          };
-    
-          recognitionRef.current.onend = () => {
-            setListening(false);
-          };
-        } catch (error) {
-          console.error("Error initializing speech recognition:", error);
-          setSpeechSupported(false);
-        }
+  // Use our custom hooks
+  const { 
+    isListening, 
+    isSupported: speechRecognitionSupported, 
+    toggleListening,
+    start: startListening,
+    stop: stopListening
+  } = useSpeechRecognition({
+    onResult: (transcript) => {
+      setInput(transcript);
+      setSpeechFeedback("Listening: " + transcript);
+    },
+    onError: (error) => {
+      console.error("Speech recognition error:", error);
+      // Show error feedback to user
+      if (error === 'not-allowed') {
+        setSpeechFeedback("Microphone access denied. Please check browser permissions.");
+        setApiError("Microphone access was denied. Please check your browser permissions.");
+      } else if (error === 'no-speech') {
+        setSpeechFeedback("No speech detected. Please try speaking again.");
+      } else {
+        setSpeechFeedback(`Error: ${error}. Please try again.`);
       }
-    }
-  }, [language]);
+      stopListening();
+    },
+    language
+  });
+  
+  const { 
+    isSpeaking, 
+    speak, 
+    stop: stopSpeaking,
+    voices
+  } = useSpeechSynthesis();
 
   // Auto-scroll to bottom when messages update
   useEffect(() => {
@@ -92,44 +74,24 @@ const Chatbot = () => {
     }
   }, [messages]);
 
-  const toggleListening = () => {
-    if (!speechSupported) {
-      alert("Speech recognition is not supported in your browser.");
-      return;
+  // Clear speech feedback when not listening
+  useEffect(() => {
+    if (!isListening) {
+      // Small delay to allow reading the last feedback
+      const timer = setTimeout(() => {
+        setSpeechFeedback("");
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
-    
-    try {
-      if (recognitionRef.current) {
-        if (listening) {
-          recognitionRef.current.stop();
-          setListening(false);
-        } else {
-          // Clear the input field before starting new voice recognition
-          setInput("");
-          recognitionRef.current.start();
-          setListening(true);
-        }
-      }
-    } catch (error) {
-      console.error("Error with speech recognition:", error);
-      setListening(false);
-      alert("There was an issue with speech recognition. Please try again or type your message.");
-    }
-  };
+  }, [isListening]);
 
-  const speakText = (text) => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      try {
-        window.speechSynthesis.cancel(); // Cancel any ongoing speech
-        const cleaned = sanitizeMarkdownForSpeech(text);
-        const utterance = new SpeechSynthesisUtterance(cleaned);
-        utterance.lang = language;
-        window.speechSynthesis.speak(utterance);
-      } catch (error) {
-        console.error("Error with text-to-speech:", error);
-      }
+  // Focus the input when starting to listen
+  useEffect(() => {
+    if (isListening && inputRef.current) {
+      inputRef.current.focus();
     }
-  };
+  }, [isListening]);
 
   const detectLanguage = (text) => {
     const hindiRegex = /[\u0900-\u097F]/;
@@ -139,6 +101,15 @@ const Chatbot = () => {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
+    // Stop any ongoing speech
+    if (isListening) {
+      stopListening();
+    }
+    
+    if (isSpeaking) {
+      stopSpeaking();
+    }
+
     setApiError(false);
     const detectedLang = detectLanguage(input);
     setLanguage(detectedLang);
@@ -146,6 +117,7 @@ const Chatbot = () => {
     const newUserMessage = { role: "user", content: input };
     setMessages(prev => [...prev, newUserMessage]);
     setInput("");
+    setSpeechFeedback("");
     setLoading(true);
 
     try {
@@ -177,7 +149,12 @@ const Chatbot = () => {
       if (data?.choices && data.choices[0]?.message) {
         const assistantMessage = data.choices[0].message;
         setMessages((prev) => [...prev, assistantMessage]);
-        speakText(assistantMessage.content);
+        
+        // Speak the assistant's response
+        speak(assistantMessage.content, { 
+          cleanMarkdown: true,
+          lang: language
+        });
       } else {
         setMessages((prev) => [
           ...prev,
@@ -211,10 +188,18 @@ const Chatbot = () => {
     }
   };
 
-  const stopSpeaking = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+  const handleSpeakButtonClick = () => {
+    // Clear input when starting new voice recognition
+    if (!isListening) {
+      setInput("");
+      setApiError(false);
+      setSpeechFeedback("Listening... Speak now");
+    } else {
+      setSpeechFeedback("Stopping...");
     }
+    
+    // Toggle speech recognition
+    toggleListening();
   };
 
   return (
@@ -255,7 +240,7 @@ const Chatbot = () => {
             </div>
           ))}
         {loading && (
-          <div className="flex items-center gap-2 text-amber-600 italic">
+          <div className="flex items-center gap-2 text-amber-600">
             <Loader2 size={18} className="animate-spin" />
             <span>Assistant is thinking...</span>
           </div>
@@ -268,52 +253,86 @@ const Chatbot = () => {
       </div>
 
       {/* Input area */}
-      <div className="mt-4 relative">
-        <textarea
-          className="w-full p-3 pr-14 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none border-amber-200"
-          rows="3"
-          placeholder={listening ? "Listening... Speak your question." : "Type your legal question here..."}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        
-        <button
-          onClick={sendMessage}
-          disabled={loading || !input.trim()}
-          className={`absolute right-3 bottom-3 p-2 rounded-full ${
-            loading || !input.trim() 
-              ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
-              : 'bg-amber-500 text-white hover:bg-amber-600'
-          } transition-colors`}
-          aria-label="Send message"
-        >
-          {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-        </button>
-      </div>
+      <div className="mt-4">
+        <div className="relative">
+          <textarea
+            ref={inputRef}
+            className="w-full p-3 border border-amber-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-200 resize-none"
+            rows="3"
+            placeholder={isListening ? "Listening... Speak your question." : "Type your legal question here..."}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={loading}
+          />
+          
+          {/* Speech feedback overlay */}
+          {speechFeedback && (
+            <div className={styles.speechFeedback}>
+              {speechFeedback}
+            </div>
+          )}
+        </div>
 
-      {/* Action buttons */}
-      <div className="flex justify-between mt-4 gap-2 flex-wrap">
-        <button
-          onClick={toggleListening}
-          disabled={!speechSupported}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-colors ${
-            !speechSupported 
-              ? 'bg-gray-400 cursor-not-allowed'
-              : listening
-                ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                : 'bg-amber-600 hover:bg-amber-700'
-          }`}
-        >
-          <Mic size={18} /> {listening ? "Listening..." : "Speak"}
-        </button>
-
-        <button
-          onClick={stopSpeaking}
-          className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-        >
-          <Volume2 size={18} /> Stop Audio
-        </button>
+        <div className="flex justify-between mt-2 gap-2">
+          <div className="flex gap-2">
+            <button
+              onClick={handleSpeakButtonClick}
+              className={`flex items-center gap-2 ${
+                isListening ? 'bg-amber-500 animate-pulse' : 'bg-amber-600'
+              } text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors ${
+                !speechRecognitionSupported && 'opacity-60 cursor-not-allowed'
+              }`}
+              disabled={loading || !speechRecognitionSupported}
+              title={speechRecognitionSupported ? 
+                (isListening ? "Stop listening" : "Start voice input") : 
+                "Speech recognition not supported"}
+            >
+              {isListening ? (
+                <>
+                  <div className={styles.audioWaves}>
+                    <div className={styles.audioWave}></div>
+                    <div className={styles.audioWave}></div>
+                    <div className={styles.audioWave}></div>
+                    <div className={styles.audioWave}></div>
+                    <div className={styles.audioWave}></div>
+                  </div>
+                  <span className="ml-1">Stop</span>
+                </>
+              ) : (
+                <>
+                  <Mic size={18} />
+                  <span>Speak</span>
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={stopSpeaking}
+              className={`flex items-center gap-2 ${
+                isSpeaking ? 'bg-red-500' : 'bg-red-600'
+              } text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors ${
+                !isSpeaking && 'opacity-70'
+              }`}
+              disabled={!isSpeaking}
+              title="Stop text-to-speech"
+            >
+              <Square size={18} />
+              Stop
+            </button>
+          </div>
+          
+          <button
+            onClick={sendMessage}
+            disabled={loading || !input.trim()}
+            className={`flex items-center gap-2 bg-amber-600 text-white px-6 py-2 rounded-lg hover:bg-amber-700 transition-colors ${
+              (loading || !input.trim()) && 'opacity-70'
+            }`}
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            Send
+          </button>
+        </div>
       </div>
     </div>
   );

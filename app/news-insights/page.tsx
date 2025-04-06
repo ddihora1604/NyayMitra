@@ -5,7 +5,6 @@ import { Newspaper, ExternalLink, Clock, BookOpen } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Navbar } from "@/components/navbar";
 
 // Mock news data (in a real app, this would come from the GNEWS API)
 const newsData = [
@@ -92,8 +91,6 @@ export default function NewsInsights() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 to-white">
-      <Navbar title="News & Insights" />
-      
       <div className="p-8 max-w-9xl mx-auto mt-8">
         <section>
           <div className="mb-6">

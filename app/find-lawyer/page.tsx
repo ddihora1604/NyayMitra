@@ -57,6 +57,8 @@ export default function FindLawyerPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedLawyer, setSelectedLawyer] = useState<any | null>(null);
+  const [expandedMapView, setExpandedMapView] = useState(false);
+  const [mapTransitioning, setMapTransitioning] = useState(false);
 
   // Handle input changes
   const handleInputChange = (
@@ -75,6 +77,9 @@ export default function FindLawyerPage() {
     setIsLoading(true);
     setIsSearchSubmitted(true);
     setError(null);
+    // Reset expanded view and selected lawyer when making a new search
+    setExpandedMapView(false);
+    setSelectedLawyer(null);
     // Search is handled by the LawyerSearchMap component
   };
 
@@ -85,6 +90,42 @@ export default function FindLawyerPage() {
   const handleSearchResults = (results: any[]) => {
     setSearchResults(results);
     setIsLoading(false);
+  };
+  
+  // Handle lawyer selection to expand map
+  const handleLawyerSelect = (lawyer: any) => {
+    // First set transition flags
+    setMapTransitioning(true);
+    
+    // Set selected lawyer for map focus
+    setSelectedLawyer(lawyer);
+    
+    // Use requestAnimationFrame to create a smooth fade-in effect
+    window.requestAnimationFrame(() => {
+      // Show the expanded map view
+      setExpandedMapView(true);
+      
+      // After a brief delay, complete the transition
+      setTimeout(() => {
+        setMapTransitioning(false);
+      }, 200);
+    });
+  };
+  
+  // Handle back button from expanded map view
+  const handleBackFromMap = () => {
+    // Set transition flag for smooth animation
+    setMapTransitioning(true);
+    
+    // Use requestAnimationFrame for smoother transition
+    window.requestAnimationFrame(() => {
+      setTimeout(() => {
+        setExpandedMapView(false);
+        setTimeout(() => {
+          setMapTransitioning(false);
+        }, 100);
+      }, 50);
+    });
   };
 
   // Add useEffect to set global Leaflet CSS
@@ -109,6 +150,24 @@ export default function FindLawyerPage() {
       }
     };
   }, []);
+
+  // Add useEffect to handle map invalidation
+  useEffect(() => {
+    if (expandedMapView && selectedLawyer) {
+      // Use requestAnimationFrame to ensure the DOM is updated
+      window.requestAnimationFrame(() => {
+        // Force a window resize to make Leaflet recalculate dimensions
+        window.dispatchEvent(new Event('resize'));
+        
+        // Force our map container to redraw
+        const mapContainer = document.getElementById('expanded-map-container');
+        if (mapContainer) {
+          // This triggers a reflow
+          void mapContainer.offsetHeight;
+        }
+      });
+    }
+  }, [expandedMapView, selectedLawyer]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -249,92 +308,195 @@ export default function FindLawyerPage() {
             Back to Search
           </button>
           
-          {/* Side-by-side layout for lawyer list and map */}
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Lawyer Listing Panel */}
-            <div className="lg:w-2/5">
-              <div className="bg-white rounded-xl shadow-md border border-amber-100 overflow-hidden">
-                <div className="border-b border-amber-100 px-4 py-3 bg-amber-50">
-                  <h2 className="text-lg font-semibold text-amber-800 flex items-center">
-                    <Search className="h-5 w-5 mr-2 text-amber-600" />
-                    Search Results
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {searchParams.specialty !== 'Any' ? searchParams.specialty : 'All specialties'} in {searchParams.location !== 'Any' ? searchParams.location : 'India'}
-                  </p>
-                </div>
-
-                <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
-                  {isLoading ? (
-                    <div className="p-8 text-center">
-                      <div className="inline-block animate-spin mr-2 h-6 w-6 text-amber-600">
-                        <RefreshCw size={24} />
-                      </div>
-                      <p className="text-gray-600 mt-2">Searching for lawyers...</p>
-                    </div>
-                  ) : error ? (
-                    <div className="p-4 bg-red-50 text-red-700">
-                      <p>{error}</p>
-                      <button 
-                        onClick={() => setIsSearchSubmitted(false)} 
-                        className="mt-2 text-amber-600 hover:text-amber-800"
-                      >
-                        Try another search
-                      </button>
-                    </div>
-                  ) : searchResults.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">
-                      <Search className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p className="text-lg font-medium">No lawyers found</p>
-                      <p className="mt-2">Try adjusting your search criteria</p>
-                    </div>
-                  ) : (
-                    searchResults.map((lawyer) => (
-                      <div 
-                        key={lawyer.id}
-                        onClick={() => setSelectedLawyer(lawyer)}
-                        className={`p-4 hover:bg-amber-50 cursor-pointer transition-colors ${selectedLawyer?.id === lawyer.id ? 'bg-amber-50 border-l-4 border-amber-500' : ''}`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${lawyer.gender === 'female' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {lawyer.name.charAt(0)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-gray-900 truncate">{lawyer.name}</h3>
-                            <p className="text-sm text-gray-500">{lawyer.specialty || 'General Law'} {lawyer.experience ? `• ${lawyer.experience}` : ''}</p>
-                            <div className="flex items-center text-sm text-gray-500 mt-1">
-                              <MapPin size={14} className="mr-1 text-amber-500" />
-                              <span className="truncate">{lawyer.location || 'India'}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex justify-end">
-                          <button className="text-xs text-amber-600 hover:text-amber-800 font-medium">
-                            View Profile
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+          {expandedMapView && selectedLawyer ? (
+            // Expanded map view when a lawyer is selected
+            <div className={`bg-white rounded-xl shadow-md border border-amber-100 overflow-hidden expanded-map transition-all duration-500 ${mapTransitioning ? 'opacity-0 scale-95 translate-y-4' : 'opacity-100 scale-100 translate-y-0'}`}>
+              <div className="p-4 bg-amber-50 border-b border-amber-100 flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-amber-800">
+                  <MapPin className="h-5 w-5 inline mr-2 text-amber-600" />
+                  {selectedLawyer.name} - Location Map
+                </h2>
+                <button
+                  onClick={handleBackFromMap}
+                  className="flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors"
+                >
+                  <ArrowLeft size={18} />
+                  Back to Results
+                </button>
               </div>
-            </div>
-
-            {/* Map Display */}
-            <div className="lg:w-3/5">
-              <div className="bg-white rounded-xl shadow-md border border-amber-100 overflow-hidden h-[600px]">
-                <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+              
+              <div className="h-[700px]">
+                <div style={{ width: '100%', height: '100%', position: 'relative' }} id="expanded-map-container" className="fade-in-map">
                   <LawyerSearchMap 
+                    key={`expanded-view-${selectedLawyer?.id}`}
                     searchParams={searchParams} 
                     selectedLawyer={selectedLawyer}
                     onSearchResults={handleSearchResults}
                   />
                 </div>
               </div>
+              
+              {/* Selected lawyer details */}
+              <div className="p-4 bg-amber-50 border-t border-amber-100">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="col-span-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${selectedLawyer.gender === 'female' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {selectedLawyer.name.charAt(0)}
+                      </div>
+                      <h3 className="font-medium text-gray-900">{selectedLawyer.name}</h3>
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="flex flex-wrap gap-x-8 gap-y-2">
+                      {selectedLawyer.specialty && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">Specialty</span>
+                          <p>{selectedLawyer.specialty}</p>
+                        </div>
+                      )}
+                      {selectedLawyer.experience && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">Experience</span>
+                          <p>{selectedLawyer.experience}</p>
+                        </div>
+                      )}
+                      {selectedLawyer.location && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">Location</span>
+                          <p>{selectedLawyer.location}</p>
+                        </div>
+                      )}
+                      {selectedLawyer.contact && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">Contact</span>
+                          <p>{selectedLawyer.contact}</p>
+                        </div>
+                      )}
+                      {selectedLawyer.address && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">Address</span>
+                          <p>{selectedLawyer.address}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            // Regular layout for lawyer list only, map appears on lawyer selection
+            <div className={`transition-all duration-300 ${mapTransitioning ? 'opacity-70 scale-95' : 'opacity-100 scale-100'}`}>
+              {/* Lawyer Listing Panel */}
+              <div className="w-full">
+                <div className="bg-white rounded-xl shadow-md border border-amber-100 overflow-hidden h-full flex flex-col">
+                  <div className="border-b border-amber-100 px-4 py-3 bg-amber-50 flex-shrink-0">
+                    <h2 className="text-lg font-semibold text-amber-800 flex items-center">
+                      <Search className="h-5 w-5 mr-2 text-amber-600" />
+                      Search Results
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {searchParams.specialty !== 'Any' ? searchParams.specialty : 'All specialties'} in {searchParams.location !== 'Any' ? searchParams.location : 'India'}
+                    </p>
+                  </div>
+
+                  <div className="divide-y divide-gray-100 overflow-y-auto lawyer-results flex-grow">
+                    {isLoading ? (
+                      <div className="loading-container">
+                        <div className="text-center">
+                          <RefreshCw className="h-10 w-10 text-amber-500 animate-spin mx-auto mb-4" />
+                          <p className="text-gray-600">Searching for lawyers...</p>
+                        </div>
+                      </div>
+                    ) : error ? (
+                      <div className="loading-container">
+                        <div className="text-center bg-red-50 text-red-700 p-4 rounded-lg max-w-md">
+                          <h3 className="font-medium mb-2">Error</h3>
+                          <p>{error}</p>
+                          <button 
+                            onClick={() => setIsSearchSubmitted(false)} 
+                            className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors"
+                          >
+                            Try another search
+                          </button>
+                        </div>
+                      </div>
+                    ) : searchResults.length === 0 ? (
+                      <div className="loading-container">
+                        <div className="text-center">
+                          <Search className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                          <p className="text-lg font-medium">No lawyers found</p>
+                          <p className="mt-2">Try adjusting your search criteria</p>
+                          <button 
+                            onClick={() => setIsSearchSubmitted(false)} 
+                            className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors"
+                          >
+                            Try another search
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                        {searchResults.map((lawyer) => (
+                          <div 
+                            key={lawyer.id}
+                            onClick={() => handleLawyerSelect(lawyer)}
+                            className={`p-4 hover:bg-amber-50 cursor-pointer transition-colors lawyer-card rounded-lg border ${selectedLawyer?.id === lawyer.id ? 'selected-lawyer-indicator' : 'border-gray-100'}`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${lawyer.gender === 'female' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
+                                {lawyer.name.charAt(0)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-gray-900 truncate">{lawyer.name}</h3>
+                                <p className="text-sm text-gray-500">{lawyer.specialty || 'General Law'} {lawyer.experience ? `• ${lawyer.experience}` : ''}</p>
+                                <div className="flex items-center text-sm text-gray-500 mt-1">
+                                  <MapPin size={14} className="mr-1 text-amber-500" />
+                                  <span className="truncate">{lawyer.location || 'India'}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex justify-between">
+                              <div>
+                                {lawyer.distance_km && (
+                                  <span className="text-xs text-gray-500">
+                                    ~ {lawyer.distance_km.toFixed(1)} km away
+                                  </span>
+                                )}
+                              </div>
+                              <button 
+                                className="text-xs text-amber-600 hover:text-amber-800 font-medium"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLawyerSelect(lawyer);
+                                }}
+                              >
+                                View on Map
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Hidden map for pre-loading */}
+              <div className="hidden">
+                <div style={{ width: '1px', height: '1px', overflow: 'hidden', position: 'absolute', opacity: 0 }}>
+                  <LawyerSearchMap 
+                    key={`preload-view`}
+                    searchParams={searchParams} 
+                    selectedLawyer={null}
+                    onSearchResults={handleSearchResults}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           
-          {/* Override z-index for map controls */}
+          {/* Override z-index for map controls and add map fade-in animation */}
           <style jsx global>{`
             .leaflet-control-container .leaflet-top,
             .leaflet-control-container .leaflet-bottom {
@@ -347,6 +509,26 @@ export default function FindLawyerPage() {
               width: 100% !important;
               height: 100% !important;
               border-radius: 0.75rem;
+            }
+            
+            /* Transition styles */
+            .expanded-map {
+              transform-origin: center;
+              transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            
+            /* Map fade-in animation */
+            .fade-in-map {
+              animation: fadeInMap 0.8s ease-out forwards;
+            }
+            
+            @keyframes fadeInMap {
+              0% {
+                opacity: 0;
+              }
+              100% {
+                opacity: 1;
+              }
             }
           `}</style>
         </>

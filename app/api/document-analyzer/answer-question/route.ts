@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Ensure this route is always dynamically rendered
-export const dynamic = 'force-dynamic';
+// Sleep function for retries
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Multiple API keys for rotation
 const API_KEYS = [
@@ -37,8 +37,8 @@ function truncateText(text: string, maxChars = MAX_INPUT_TOKENS * 4) {
     text.substring(text.length - halfLength);
 }
 
-// Sleep function for retries
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// Make sure this route is always dynamically rendered
+export const dynamic = 'force-dynamic';
 
 // Simple keyword matching fallback when API calls fail
 function localKeywordSearch(question: string, documentText: string): string {
@@ -115,36 +115,30 @@ export async function POST(req: NextRequest) {
   try {
     const { question, documentText } = await req.json();
     
-    // Validate inputs
-    if (!question || typeof question !== 'string') {
-      return NextResponse.json({ error: 'Missing or invalid question' }, { status: 400 });
+    if (!question || !documentText) {
+      return NextResponse.json({ error: 'Question and document text are required' }, { status: 400 });
     }
     
-    if (!documentText || typeof documentText !== 'string') {
-      return NextResponse.json({ error: 'Missing or invalid document text' }, { status: 400 });
-    }
+    // Truncate document text if it's too large
+    const truncatedText = truncateText(documentText);
     
-    // Prepare system prompt and context
-    const systemPrompt = 
-      "You are a professional document analyst. Answer questions about the document accurately and thoroughly. " +
-      "If the answer cannot be found in the document, clearly state that and provide possible alternatives or suggestions. " +
-      "Reference specific parts of the document in your answers when possible. " +
-      "Format your response in a clear, structured way.";
-      
-    // Create full prompt with context, truncating if necessary
-    const truncatedDocText = truncateText(documentText);
-    const prompt = `
-Document content:
-${truncatedDocText}
+    // Prepare the user prompt (without using system role)
+    // Combine the system prompt and the user prompt into a single user prompt
+    const basePrompt = `You are an assistant specializing in document analysis. Your task is to answer questions about a document.
+    
+Please analyze the following document and answer the user's question:
 
-Question: ${question}
+USER QUESTION: ${question}
 
-Please provide a detailed, accurate answer based on the document content above.
-`;
+DOCUMENT CONTENT:
+${truncatedText}
 
+Please provide a detailed and accurate answer based strictly on the document content. If the document doesn't contain information to answer the question, state that clearly.`;
+    
+    // Variables to track response
     let answer = '';
-    let modelUsed = PRIMARY_MODEL;
     let apiKeyUsed = API_KEYS[currentKeyIndex];
+    let modelUsed = PRIMARY_MODEL;
     let retryCount = 0;
     const maxRetries = API_KEYS.length * 2; // Try each key twice
     
@@ -166,11 +160,10 @@ Please provide a detailed, accurate answer based on the document content above.
         
         console.log(`Attempt ${retryCount+1}: Using API key ending in ...${apiKeyUsed.slice(-4)} with model ${currentModel}`);
         
-        // Send to Gemini API
+        // Send to Gemini API - avoid using system role
         const result = await model.generateContent({
           contents: [
-            { role: 'system', parts: [{ text: systemPrompt }] },
-            { role: 'user', parts: [{ text: prompt }] }
+            { role: 'user', parts: [{ text: basePrompt }] }
           ],
           generationConfig: {
             temperature: 0.2,
@@ -188,17 +181,21 @@ Please provide a detailed, accurate answer based on the document content above.
         break;
         
       } catch (error: any) {
-        console.error(`Error with key ${apiKeyUsed.slice(-4)} and model ${modelUsed}:`, error.message);
+        console.error(`Error with Gemini API (key ${currentKeyIndex}):`, error.message);
         
-        // If it's a quota/rate limit error
+        // If it's a quota/rate limit error, rotate API key
         if (error.message.includes('quota') || 
             error.message.includes('429') || 
             error.message.includes('rate') || 
             error.message.includes('limit')) {
+          
           retryCount++;
           
           if (retryCount <= maxRetries) {
-            // Wait before retry - exponential backoff
+            // Rotate API key
+            getNextApiKey();
+            
+            // Wait before retry with exponential backoff
             const delay = Math.min(500 * Math.pow(1.5, retryCount), 5000);
             console.log(`Rate limit hit. Rotating API key and waiting ${delay}ms before retry ${retryCount}`);
             await sleep(delay);
@@ -207,53 +204,40 @@ Please provide a detailed, accurate answer based on the document content above.
         } else {
           // For non-quota errors, still try other keys but with smaller delay
           retryCount++;
+          getNextApiKey();
+          
           if (retryCount <= maxRetries) {
             await sleep(300);
             continue;
           }
         }
         
-        // If all retries fail
-        throw error;
+        // If we reached here, all retries failed
+        return NextResponse.json({ 
+          error: 'Failed to generate answer after multiple attempts', 
+          details: error.message
+        }, { status: 500 });
       }
     }
     
-    // If we still don't have an answer after all retries, use local keyword search
     if (!answer) {
-      console.log('All API attempts failed, using local keyword search fallback');
-      answer = localKeywordSearch(question, documentText);
-      modelUsed = 'local-search';
+      return NextResponse.json({ 
+        error: 'Failed to generate answer after all retry attempts'
+      }, { status: 500 });
     }
     
+    // Return the answer with metadata
     return NextResponse.json({
       answer,
-      modelUsed,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      modelUsed
     });
     
   } catch (error: any) {
-    console.error('Error answering question:', error.message);
-    
-    // Try local fallback in case of API errors
-    try {
-      const { question, documentText } = await req.json();
-      const fallbackAnswer = localKeywordSearch(question, documentText);
-      
-      return NextResponse.json({
-        answer: fallbackAnswer,
-        modelUsed: 'local-search-fallback',
-        timestamp: new Date().toISOString()
-      });
-    } catch (fallbackError) {
-      // If even the fallback fails, return a user-friendly error
-      const errorMessage = error.message.includes('quota') || error.message.includes('429') 
-        ? 'Service temporarily unavailable due to high demand. Please try again in a few moments.'
-        : 'Failed to process question. Please try again with a more specific question.';
-      
-      return NextResponse.json({ 
-        error: errorMessage, 
-        details: error.message 
-      }, { status: 500 });
-    }
+    console.error('Answer generation error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to process your question',
+      details: error.message 
+    }, { status: 500 });
   }
 } 

@@ -1,116 +1,155 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import dynamic from 'next/dynamic';
-import { I18nextProvider } from 'react-i18next';
-import i18n from '../i18n';
-import { Toaster } from 'sonner';
 import axios from 'axios';
-import { AlertTriangle, Search, RefreshCw, Clock, FileText, Gavel, Calendar, User, Users } from 'lucide-react';
-
-// Original CaseStatus component
-const OriginalCaseStatus = dynamic(
-  () => import('../../case-status-component/case-status-component/src/components/CaseStatus'),
-  { 
-    loading: () => (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin mr-2">🔄</div>
-        <p>Loading Case Status component...</p>
-      </div>
-    ),
-    ssr: false
-  }
-);
+import { Toaster, toast } from 'sonner';
+import { motion } from 'framer-motion';
+import { AlertTriangle, Calendar, Clock, FileText, Gavel, RefreshCw, Search, User, Users } from 'lucide-react';
+import { I18nextProvider, useTranslation } from 'react-i18next';
+import i18n from './i18n';
 
 interface CaseStatusWrapperProps {
-  apiUrl: string;
+  apiUrl?: string; // Made optional as we'll use fixed endpoints
 }
 
-// Custom captcha display component to handle our text-based captcha
-const TextCaptcha: React.FC<{ captchaText: string }> = ({ captchaText }) => {
+// Helper component for displaying individual case fields
+const CaseStatusField: React.FC<{ 
+  icon: React.ReactNode; 
+  label: string; 
+  value: string;
+}> = ({ icon, label, value }) => {
   return (
-    <div 
-      className="inline-block bg-gray-100 px-4 py-2 rounded border border-gray-300"
-      style={{
-        fontFamily: 'monospace',
-        letterSpacing: '2px',
-        fontSize: '18px',
-        fontWeight: 'bold',
-        color: '#333',
-        textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-        background: 'linear-gradient(to bottom, #f9f9f9, #e9e9e9)',
-      }}
-    >
-      {captchaText}
+    <div className="flex items-start gap-3">
+      <div className="h-8 w-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-700 flex-shrink-0">
+        {icon}
+      </div>
+      <div>
+        <div className="text-sm font-medium text-gray-600">{label}</div>
+        <div className="text-sm font-semibold text-gray-900">{value}</div>
+      </div>
     </div>
   );
 };
 
-// Component to display a field in the case status
-const CaseStatusField: React.FC<{ icon: React.ReactNode, label: string, value: string }> = ({ 
-  icon, label, value 
-}) => (
-  <div className="flex items-start mb-3">
-    <div className="text-amber-600 mr-3 mt-0.5">{icon}</div>
-    <div>
-      <div className="text-sm font-semibold text-gray-600">{label}</div>
-      <div className="text-base">{value}</div>
+// Component to display a captcha challenge
+const TextCaptcha: React.FC<{ captchaText: string }> = ({ captchaText }) => {
+  return (
+    <div className="p-2 bg-white border border-gray-200 rounded-md overflow-hidden">
+      <img 
+        src={`data:image/png;base64,${captchaText}`}
+        alt="CAPTCHA"
+        className="max-h-full"
+      />
     </div>
-  </div>
-);
+  );
+};
+
+// Component to display the case status result in a structured format
+const CaseStatusResult: React.FC<{ caseData: Record<string, string> }> = ({ caseData }) => {
+  const { t } = useTranslation();
+  
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-white rounded-xl shadow-md p-6 border border-amber-100 mb-6"
+    >
+      <h3 className="text-lg font-semibold text-amber-800 mb-4 flex items-center">
+        <FileText className="w-5 h-5 mr-2 text-amber-600" />
+        {t('caseStatus.caseInfoTitle')}
+      </h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <CaseStatusField 
+            icon={<FileText size={18} />} 
+            label={t('caseStatus.fields.caseNumber')} 
+            value={caseData['Case Number'] || t('caseStatus.notAvailable')} 
+          />
+          
+          <CaseStatusField 
+            icon={<Gavel size={18} />} 
+            label={t('caseStatus.fields.status')} 
+            value={caseData['Status'] || t('caseStatus.notAvailable')} 
+          />
+          
+          <CaseStatusField 
+            icon={<Gavel size={18} />} 
+            label={t('caseStatus.fields.court')} 
+            value={caseData['Court'] || t('caseStatus.notAvailable')} 
+          />
+          
+          <CaseStatusField 
+            icon={<User size={18} />} 
+            label={t('caseStatus.fields.judge')} 
+            value={caseData['Presiding Judge'] || t('caseStatus.notAvailable')} 
+          />
+        </div>
+        
+        <div className="space-y-4">
+          <CaseStatusField 
+            icon={<Calendar size={18} />} 
+            label={t('caseStatus.fields.nextHearing')} 
+            value={caseData['Next Hearing Date'] || t('caseStatus.notAvailable')} 
+          />
+          
+          <CaseStatusField 
+            icon={<Calendar size={18} />} 
+            label={t('caseStatus.fields.filingDate')} 
+            value={caseData['Filing Date'] || t('caseStatus.notAvailable')} 
+          />
+          
+          <CaseStatusField 
+            icon={<FileText size={18} />} 
+            label={t('caseStatus.fields.caseType')} 
+            value={caseData['Case Type'] || t('caseStatus.notAvailable')} 
+          />
+          
+          <CaseStatusField 
+            icon={<Users size={18} />} 
+            label={t('caseStatus.fields.parties')} 
+            value={`${caseData['Petitioner'] || t('caseStatus.notAvailable')} vs. ${caseData['Respondent'] || t('caseStatus.notAvailable')}`} 
+          />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 // This wrapper provides all necessary context providers and handles the API interaction
-const CaseStatusWrapper: React.FC<CaseStatusWrapperProps> = ({ apiUrl }) => {
-  const [captchaText, setCaptchaText] = useState<string>('');
+const CaseStatusWrapper: React.FC<CaseStatusWrapperProps> = () => {
+  const { t } = useTranslation();
+  const [captchaImage, setCaptchaImage] = useState<string>('');
   const [sessionId, setSessionId] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [caseResult, setCaseResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [cnrNumber, setCnrNumber] = useState<string>('');
   const [captchaInput, setCaptchaInput] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [captchaLoading, setCaptchaLoading] = useState<boolean>(true);
   const [parsedCaseData, setParsedCaseData] = useState<Record<string, string> | null>(null);
-  
-  // Parse case result into structured data
-  useEffect(() => {
-    if (caseResult) {
-      const lines = caseResult.trim().split('\n');
-      const data: Record<string, string> = {};
-      
-      lines.forEach(line => {
-        const parts = line.split(': ');
-        if (parts.length >= 2) {
-          const key = parts[0].trim();
-          const value = parts.slice(1).join(': ').trim();
-          data[key] = value;
-        }
-      });
-      
-      setParsedCaseData(data);
-    } else {
-      setParsedCaseData(null);
-    }
-  }, [caseResult]);
-  
-  // Function to fetch captcha
+  const [error, setError] = useState<string | null>(null);
+
+  // Function to fetch captcha image
   const fetchCaptcha = async () => {
-    setIsLoading(true);
-    setError(null);
-    
+    setCaptchaLoading(true);
     try {
-      const response = await axios.get(apiUrl);
+      const response = await axios.post('http://localhost:8000/captcha');
       if (response.data && response.data.success) {
-        setCaptchaText(response.data.captcha_base64);
+        setCaptchaImage(response.data.captcha_base64);
         setSessionId(response.data.session_id);
       } else {
-        throw new Error('Invalid captcha response');
+        setError('Failed to load CAPTCHA');
       }
     } catch (error) {
-      setError('Failed to load captcha');
-      console.error('Error fetching captcha:', error);
+      setError('Failed to load CAPTCHA');
     } finally {
-      setIsLoading(false);
+      setCaptchaLoading(false);
     }
   };
-  
+
+  // Fetch captcha on component mount
+  useEffect(() => {
+    fetchCaptcha();
+  }, []);
+
   // Function to handle form submission
   const handleSubmit = async () => {
     if (!cnrNumber || !captchaInput) {
@@ -120,253 +159,190 @@ const CaseStatusWrapper: React.FC<CaseStatusWrapperProps> = ({ apiUrl }) => {
     
     setIsLoading(true);
     setError(null);
-    setCaseResult(null);
     setParsedCaseData(null);
     
     try {
-      const formData = new FormData();
-      formData.append('cino', cnrNumber);
-      formData.append('captcha', captchaInput);
-      formData.append('session_id', sessionId);
-      
-      const response = await axios.post(apiUrl, formData);
+      const response = await axios.post('http://localhost:8000/search', {
+        cnr: cnrNumber,
+        captcha: captchaInput,
+        session_id: sessionId
+      });
       
       if (response.data && response.data.success) {
-        setCaseResult(response.data.result);
+        // Parse and set the structured case data
+        setParsedCaseData(response.data.data);
+        
+        // Clear captcha input and get a new captcha
         setCaptchaInput('');
-        // Fetch a new captcha after successful submission
         await fetchCaptcha();
+        
+        // Show success toast
+        toast.success('Case status retrieved successfully');
       } else {
         throw new Error(response.data.error || 'Failed to fetch case status');
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Failed to fetch case status';
       setError(errorMessage);
+      toast.error(errorMessage);
       await fetchCaptcha();
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // Fetch captcha on component mount
-  useEffect(() => {
-    fetchCaptcha();
-  }, []);
-  
-  return (
-    <I18nextProvider i18n={i18n}>
-      <div>
-        <Toaster position="top-right" />
-        
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="max-w-3xl mx-auto space-y-6">
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold">Check Your Case Status</h2>
-              <p className="text-sm text-gray-600">
-                Enter your Case Number (CNR) and the captcha to check the status
-              </p>
-              <div className="bg-amber-50 border-l-4 border-amber-500 p-3 text-sm">
-                <p className="font-medium">Format for CNR Number:</p>
-                <p className="text-gray-600 mt-1">STATE[2]COURT[2]-NUMBER[6]-YEAR[4]</p>
-                <p className="text-gray-600 mt-1">Example: DLHC01-000123-2023 (Delhi High Court)</p>
-              </div>
-            </div>
 
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <label htmlFor="cnr-input" className="text-sm font-medium text-gray-700">
-                  CNR Number
+  return (
+    <div>
+      <Toaster position="top-right" />
+      
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="max-w-3xl mx-auto space-y-6">
+          <div className="bg-white rounded-xl shadow-md p-6 border border-amber-100">
+            <h3 className="text-lg font-semibold text-amber-800 mb-4">{t('caseStatus.title')}</h3>
+            
+            <div className="mb-4 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-md">
+              <h4 className="text-sm font-semibold text-amber-800 mb-1">CNR Number Format:</h4>
+              <p className="text-sm text-amber-700">
+                STATE[2]COURT[2]DIGIT[2]-NUMBER[6]-YEAR[4]
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                Example: DLHC01-000123-2023 (Delhi High Court)
+              </p>
+            </div>
+            
+            <div className="space-y-5">
+              <div>
+                <label htmlFor="cnr-number" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('caseStatus.cnrLabel')}
                 </label>
                 <input
-                  id="cnr-input"
+                  id="cnr-number"
                   type="text"
-                  placeholder="Enter CNR Number (e.g., DLHC01-000123-2023)"
                   value={cnrNumber}
                   onChange={(e) => setCnrNumber(e.target.value.toUpperCase())}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder={t('caseStatus.cnrPlaceholder')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  disabled={isLoading}
                 />
               </div>
-
-              <div className="space-y-1">
-                <label htmlFor="captcha-input" className="text-sm font-medium text-gray-700">
-                  Captcha Verification
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('caseStatus.captchaLabel')}
                 </label>
-                <div className="flex items-center gap-2">
-                  {isLoading ? (
-                    <div className="animate-spin text-gray-500 p-2">
-                      <RefreshCw className="h-5 w-5" />
-                    </div>
-                  ) : captchaText ? (
-                    <TextCaptcha captchaText={captchaText} />
-                  ) : (
-                    <span className="text-sm text-gray-400">Loading...</span>
-                  )}
-                  <input
-                    id="captcha-input"
-                    type="text"
-                    placeholder="Enter Captcha"
-                    value={captchaInput}
-                    onChange={(e) => setCaptchaInput(e.target.value)}
-                    className="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
+                <div className="bg-gray-50 rounded-md border border-gray-200 p-4 flex flex-col md:flex-row items-center gap-4">
+                  <div className="min-w-[140px] h-12 flex-shrink-0 flex items-center justify-center">
+                    {captchaLoading ? (
+                      <div className="flex items-center justify-center">
+                        <RefreshCw className="h-5 w-5 animate-spin text-amber-500" />
+                      </div>
+                    ) : captchaImage ? (
+                      <img 
+                        src={`data:image/png;base64,${captchaImage}`}
+                        alt="CAPTCHA"
+                        className="h-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-sm text-gray-400">Loading...</span>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 w-full">
+                    <input
+                      type="text"
+                      value={captchaInput}
+                      onChange={(e) => setCaptchaInput(e.target.value)}
+                      placeholder={t('caseStatus.captchaPlaceholder')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      disabled={isLoading || captchaLoading}
+                    />
+                  </div>
+                  
                   <button
                     onClick={fetchCaptcha}
-                    className="h-10 w-10 flex-shrink-0 p-0 flex items-center justify-center text-white bg-amber-600 rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
-                    aria-label="Refresh captcha"
+                    className="flex-shrink-0 p-2 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-md transition-colors"
+                    disabled={isLoading || captchaLoading}
+                    aria-label={t('caseStatus.refreshCaptcha')}
+                    title={t('caseStatus.refreshCaptcha')}
                   >
-                    <RefreshCw className="h-4 w-4" />
+                    <RefreshCw className="h-5 w-5" />
                   </button>
                 </div>
               </div>
-
-              <button
-                onClick={handleSubmit}
-                disabled={!cnrNumber || !captchaInput || isLoading}
-                className="w-full px-4 py-2 text-white bg-amber-600 rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    <span>Processing...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <Search className="h-4 w-4 mr-2" />
-                    <span>Search Case Status</span>
-                  </div>
-                )}
-              </button>
-            </div>
-
-            {error && (
-              <div className="flex items-start gap-2 bg-red-50 p-4 rounded-md border border-red-200">
-                <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h3 className="text-sm font-semibold text-red-800">Error</h3>
-                  <p className="text-sm text-red-700">{error}</p>
-                  {error.includes('Case not found') && (
-                    <p className="text-xs text-red-600 mt-1">
-                      Please verify your CNR number format is correct, e.g., DLHC01-000123-2023.
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {parsedCaseData && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }} 
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden"
-              >
-                <div className="bg-amber-50 px-6 py-4 border-b border-amber-100">
-                  <h3 className="font-semibold text-amber-800">Case Status Details</h3>
-                  <p className="text-sm text-amber-700">
-                    Case Number: {parsedCaseData['Case Number']}
-                  </p>
-                </div>
-                
-                <div className="p-6 grid gap-6">
-                  <div className="bg-amber-50 rounded-md p-4 flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-800">
-                      <Clock className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-amber-800">Current Status</div>
-                      <div className="text-lg font-semibold text-amber-900">{parsedCaseData['Status']}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid sm:grid-cols-2 gap-6">
-                    <CaseStatusField 
-                      icon={<Gavel className="h-5 w-5" />}
-                      label="Court"
-                      value={parsedCaseData['Court']}
-                    />
-                    
-                    <CaseStatusField 
-                      icon={<User className="h-5 w-5" />}
-                      label="Presiding Judge"
-                      value={parsedCaseData['Presiding Judge']}
-                    />
-                    
-                    <CaseStatusField 
-                      icon={<Calendar className="h-5 w-5" />}
-                      label="Next Hearing Date"
-                      value={parsedCaseData['Next Hearing Date']}
-                    />
-                    
-                    <CaseStatusField 
-                      icon={<Calendar className="h-5 w-5" />}
-                      label="Filing Date"
-                      value={parsedCaseData['Filing Date']}
-                    />
-                    
-                    <CaseStatusField 
-                      icon={<FileText className="h-5 w-5" />}
-                      label="Case Type"
-                      value={parsedCaseData['Case Type']}
-                    />
-                  </div>
-                  
-                  <div className="border-t border-gray-200 pt-4 grid sm:grid-cols-2 gap-6">
-                    <CaseStatusField 
-                      icon={<User className="h-5 w-5" />}
-                      label="Petitioner"
-                      value={parsedCaseData['Petitioner']}
-                    />
-                    
-                    <CaseStatusField 
-                      icon={<Users className="h-5 w-5" />}
-                      label="Respondent"
-                      value={parsedCaseData['Respondent']}
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-            
-            {!parsedCaseData && !error && !isLoading && (
-              <div className="text-center py-8 px-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="mx-auto w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-4">
-                  <Search className="h-8 w-8 text-amber-500" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-1">Enter your CNR number</h3>
-                <p className="text-gray-500 text-sm">
-                  Enter your Case Number (CNR) in the format STATE[2]COURT[2]-NUMBER[6]-YEAR[4]
-                </p>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-              <div className="bg-white p-5 rounded-lg border border-gray-200">
-                <h2 className="text-lg font-semibold mb-2">Sample CNR Numbers</h2>
-                <div className="space-y-2 text-sm">
-                  <div className="bg-gray-50 p-2 rounded font-mono">DLHC01-000123-2023</div>
-                  <div className="bg-gray-50 p-2 rounded font-mono">MHHC02-000456-2023</div>
-                  <div className="bg-gray-50 p-2 rounded font-mono">INSC01-001234-2022</div>
-                </div>
-              </div>
               
-              <div className="bg-white p-5 rounded-lg border border-gray-200">
-                <h2 className="text-lg font-semibold mb-2">Case Status Guide</h2>
-                <div className="space-y-1 text-sm">
-                  <p><span className="font-semibold">Pending:</span> Case is awaiting listing</p>
-                  <p><span className="font-semibold">In Progress:</span> Case is being heard</p>
-                  <p><span className="font-semibold">Scheduled:</span> Date is fixed for hearing</p>
-                  <p><span className="font-semibold">Reserved:</span> Judgment is being prepared</p>
-                </div>
+              <div className="pt-2">
+                <button
+                  onClick={handleSubmit}
+                  disabled={isLoading || captchaLoading || !cnrNumber || !captchaInput}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium text-white transition-colors ${
+                    isLoading || captchaLoading || !cnrNumber || !captchaInput
+                      ? 'bg-amber-300 cursor-not-allowed'
+                      : 'bg-amber-500 hover:bg-amber-600'
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 animate-spin" />
+                      <span>{t('caseStatus.processing')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-5 w-5" />
+                      <span>{t('caseStatus.searchButton')}</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
-        </motion.div>
-      </div>
+
+          {/* Case Result Display */}
+          {parsedCaseData && (
+            <CaseStatusResult caseData={parsedCaseData} />
+          )}
+
+          {error && (
+            <div className="flex items-start gap-2 bg-red-50 p-4 rounded-md border border-red-200">
+              <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-semibold text-red-800">{t('caseStatus.errorTitle')}</h3>
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          )}
+          
+          {!parsedCaseData && !error && !isLoading && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-white rounded-xl shadow-md p-6 border border-amber-100 text-center"
+            >
+              <div className="text-amber-500 mb-2">
+                <Search className="h-10 w-10 mx-auto opacity-40" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-1">{t('caseStatus.noResultsTitle')}</h3>
+              <p className="text-sm text-gray-500">
+                {t('caseStatus.noResultsDesc')}
+              </p>
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// Wrapper with i18n provider
+const CaseStatusWrapperWithI18n: React.FC<CaseStatusWrapperProps> = (props) => {
+  return (
+    <I18nextProvider i18n={i18n}>
+      <CaseStatusWrapper {...props} />
     </I18nextProvider>
   );
 };
 
-export default CaseStatusWrapper; 
+export default CaseStatusWrapperWithI18n; 

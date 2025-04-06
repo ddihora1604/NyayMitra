@@ -64,7 +64,7 @@ export default function PathwayPage() {
       setLoading(false);
       setShowFlow(true);
       setFlowKey(prev => prev + 1);
-    }, 800); // Faster loading for better UX
+    }, 2500); // Faster loading for better UX
   };
 
   const handleCategoryChange = (category) => {
@@ -84,7 +84,7 @@ export default function PathwayPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="bg-gradient-to-r from-amber-600 to-amber-700 border-b border-amber-500">
+      {/* <header className="bg-gradient-to-r from-amber-600 to-amber-700 border-b border-amber-500">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-center md:text-left mb-4 md:mb-0">
@@ -114,7 +114,7 @@ export default function PathwayPage() {
             </div>
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* Navigation Tabs */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
@@ -475,7 +475,7 @@ export default function PathwayPage() {
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Footer
       <footer className="bg-gray-800 text-gray-400 py-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
@@ -496,7 +496,7 @@ export default function PathwayPage() {
             © {new Date().getFullYear()} Law Pathway. All rights reserved.
           </div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 } 
