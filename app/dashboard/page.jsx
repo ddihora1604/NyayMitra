@@ -4,13 +4,10 @@ import { Globe, Users, FileText, BarChart3, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Navbar } from "@/components/navbar";
 
 export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/60 to-white">
-      <Navbar title="Dashboard" />
-      
       <div className="p-8 max-w-7xl mx-auto mt-6">
         {/* Global Justice Section */}
         <section className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-8">

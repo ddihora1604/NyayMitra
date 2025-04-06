@@ -26,12 +26,43 @@ function MapZoomHandler({ selectedLawyer }: { selectedLawyer: Lawyer | null }) {
 
   useEffect(() => {
     if (selectedLawyer && selectedLawyer.lat && selectedLawyer.lon) {
-      // When a lawyer is selected, zoom to their location with a smoother animation
-      map.flyTo([selectedLawyer.lat, selectedLawyer.lon], 14, {
-        duration: 1.5,
-        easeLinearity: 0.25
+      // First set the view immediately without animation
+      map.setView([selectedLawyer.lat, selectedLawyer.lon], 14, {
+        animate: false,
+        duration: 0
       });
+      
+      // Ensure the map container is visible
+      const mapContainer = document.querySelector('.map-container');
+      if (mapContainer) {
+        (mapContainer as HTMLElement).style.opacity = '1';
+      }
+      
+      // Force map to update immediately
+      map.invalidateSize({ animate: false });
+      
+      // Then after a short delay, animate to the final zoom level with smooth transition
+      setTimeout(() => {
+        map.flyTo([selectedLawyer.lat, selectedLawyer.lon], 16, {
+          duration: 1.8,
+          easeLinearity: 0.2
+        });
+        
+        // Add a pulsing effect to highlight the selected lawyer's marker
+        const markerElement = document.querySelector('.selected-lawyer-icon');
+        if (markerElement) {
+          markerElement.classList.add('active-marker');
+        }
+      }, 100);
     }
+    
+    return () => {
+      // Cleanup - remove active marker class when component unmounts or lawyer changes
+      const markerElement = document.querySelector('.active-marker');
+      if (markerElement) {
+        markerElement.classList.remove('active-marker');
+      }
+    };
   }, [selectedLawyer, map]);
 
   return null;
@@ -311,10 +342,24 @@ const LawyerSearchMap = React.forwardRef(({
         };
       });
       
-      setSearchResults(resultsWithCoords.filter((l: any) => l.name));
+      // Filter out duplicate lawyers based on name and specialty
+      const uniqueResultsMap = new Map();
+      resultsWithCoords.forEach((lawyer: any) => {
+        // Create a unique key combining name and specialty
+        const key = `${lawyer.name}-${lawyer.specialty || 'general'}`.toLowerCase();
+        // Only add if this combination doesn't exist yet
+        if (!uniqueResultsMap.has(key) && lawyer.name) {
+          uniqueResultsMap.set(key, lawyer);
+        }
+      });
+      
+      // Convert map values back to array
+      const uniqueResults = Array.from(uniqueResultsMap.values());
+      
+      setSearchResults(uniqueResults);
       // Notify parent component of search results
       if (onSearchResults) {
-        onSearchResults(resultsWithCoords.filter((l: any) => l.name));
+        onSearchResults(uniqueResults);
       }
       setIsLoading(false);
     } catch (err: any) {
@@ -388,15 +433,59 @@ const LawyerSearchMap = React.forwardRef(({
     return null;
   };
 
+  // Custom component to handle marker selection
+  function MarkerWithPopup({ lawyer, isSelected, onSelect }: { 
+    lawyer: Lawyer, 
+    isSelected: boolean, 
+    onSelect: (lawyer: Lawyer) => void 
+  }) {
+    const markerRef = useRef<any>(null);
+    
+    useEffect(() => {
+      // If the marker is selected, open its popup automatically
+      if (isSelected && markerRef.current) {
+        markerRef.current.openPopup();
+      }
+    }, [isSelected]);
+    
+    return (
+      <Marker 
+        ref={markerRef}
+        position={[lawyer.lat, lawyer.lon]}
+        icon={getLawyerIcon(lawyer.gender, isSelected)}
+        eventHandlers={{
+          click: () => onSelect(lawyer)
+        }}
+      >
+        <Popup autoPan={true}>
+          <div className="text-center">
+            <img 
+              src={
+                lawyer.gender === 'male'
+                  ? 'https://cdn-icons-png.flaticon.com/128/11905/11905640.png'
+                  : lawyer.gender === 'female'
+                    ? 'https://cdn-icons-png.flaticon.com/128/3611/3611204.png'
+                    : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+              }
+              alt={`${lawyer.gender} lawyer`}
+              className="w-12 h-12 rounded-full mx-auto mb-2"
+            />
+            <strong className="text-amber-800 text-lg">{lawyer.name}</strong><br />
+            {lawyer.specialty && <span><strong>Specialty:</strong> {lawyer.specialty}<br /></span>}
+            {lawyer.location && <span><strong>Location:</strong> {lawyer.location}<br /></span>}
+            <span><strong>Distance:</strong> {lawyer.distance_km.toFixed(2)} km</span>
+          </div>
+        </Popup>
+      </Marker>
+    );
+  }
+
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl shadow-md border border-amber-100 p-6">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <RefreshCw className="h-10 w-10 text-amber-500 animate-spin mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-amber-700 mb-2">Searching for Lawyers</h3>
-            <p className="text-gray-600">Please wait while we search for lawyers matching your criteria...</p>
-          </div>
+      <div className="h-full w-full flex items-center justify-center bg-white/90 rounded-lg loading-container">
+        <div className="text-center">
+          <RefreshCw className="h-10 w-10 text-amber-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading map...</p>
         </div>
       </div>
     );
@@ -404,172 +493,52 @@ const LawyerSearchMap = React.forwardRef(({
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-md border border-amber-100 p-6">
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">
+      <div className="h-full w-full flex items-center justify-center bg-white/90 rounded-lg loading-container">
+        <div className="text-center bg-red-50 text-red-700 p-4 rounded-lg max-w-md">
           <h3 className="font-medium mb-2">Error</h3>
           <p>{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors"
-          >
-            Try Again
-          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-amber-100 p-6">
-      <h2 className="text-xl font-semibold text-amber-700 mb-6">Lawyer Search Results</h2>
-      
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left column - Lawyer list */}
-        <div className="w-full lg:w-1/3">
-          <h3 className="text-lg font-medium text-gray-800 mb-4">Available Lawyers</h3>
+    <div className="h-full w-full">
+      {/* Map View */}
+      <div className="h-full rounded-lg overflow-hidden map-container" id="lawyer-map">
+        <MapContainer 
+          center={defaultCenter}
+          zoom={12} 
+          style={{ height: '100%', width: '100%' }}
+          className="z-0"
+        >
+          <MapZoomHandler selectedLawyer={selectedLawyer} />
+          <MapLoadHandler />
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
           
-          <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-            {searchResults.length === 0 ? (
-              <div className="bg-amber-50 p-4 rounded-lg">
-                <p className="text-amber-800">No lawyers found matching your criteria. Try adjusting your search parameters.</p>
+          {/* User location marker */}
+          <Marker position={[19.0445, 72.8826]}>
+            <Popup>
+              <div className="text-center">
+                <strong>Your Location</strong><br />
+                KJ Somaiya, Mumbai
               </div>
-            ) : (
-              searchResults.map((lawyer) => (
-                <div 
-                  key={lawyer.id}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    selectedLawyer?.id === lawyer.id 
-                      ? 'border-amber-500 bg-amber-50 shadow-md' 
-                      : 'border-gray-200 hover:border-amber-200 hover:bg-amber-50/50'
-                  }`}
-                  onClick={() => {
-                    setSelectedLawyer(lawyer);
-                    // Add a small delay to allow state update before map animation
-                    setTimeout(() => {
-                      document.querySelector('.map-container')?.scrollIntoView({ 
-                        behavior: 'smooth',
-                        block: 'nearest'
-                      });
-                    }, 100);
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <img 
-                      src={
-                        lawyer.gender === 'male'
-                          ? 'https://cdn-icons-png.flaticon.com/128/11905/11905640.png'
-                          : lawyer.gender === 'female'
-                            ? 'https://cdn-icons-png.flaticon.com/128/3611/3611204.png'
-                            : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
-                      }
-                      alt={`${lawyer.gender} lawyer`}
-                      className={`w-10 h-10 rounded-full ${selectedLawyer?.id === lawyer.id ? 'ring-2 ring-amber-500' : ''}`}
-                    />
-                    <h4 className="font-medium text-amber-800">{lawyer.name}</h4>
-                  </div>
-                  
-                  <div className="space-y-1 text-sm">
-                    {lawyer.specialty && <p><span className="font-medium">Specialty:</span> {lawyer.specialty}</p>}
-                    {lawyer.location && <p><span className="font-medium">Location:</span> {lawyer.location}</p>}
-                    {lawyer.experience && <p><span className="font-medium">Experience:</span> {lawyer.experience}</p>}
-                    <p><span className="font-medium">Distance:</span> {lawyer.distance_km.toFixed(2)} km</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-        
-        {/* Right column - Map */}
-        <div className="w-full lg:w-2/3">
-          <h3 className="text-lg font-medium text-gray-800 mb-4">Location Map</h3>
+            </Popup>
+          </Marker>
           
-          <div className="h-[600px] rounded-lg overflow-hidden border border-gray-200 map-container" id="lawyer-map">
-            <MapContainer 
-              center={defaultCenter}
-              zoom={12} 
-              style={{ height: '100%', width: '100%' }}
-            >
-              <MapZoomHandler selectedLawyer={selectedLawyer} />
-              <MapLoadHandler />
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
-              
-              {/* User location marker */}
-              <Marker position={[19.0445, 72.8826]}>
-                <Popup>
-                  <div className="text-center">
-                    <strong>Your Location</strong><br />
-                    KJ Somaiya, Mumbai
-                  </div>
-                </Popup>
-              </Marker>
-              
-              {/* Lawyer markers */}
-              {searchResults.map((lawyer) => (
-                <Marker 
-                  key={`marker-${lawyer.id}`}
-                  position={[lawyer.lat, lawyer.lon]}
-                  icon={getLawyerIcon(lawyer.gender, selectedLawyer?.id === lawyer.id)}
-                  eventHandlers={{
-                    click: () => setSelectedLawyer(lawyer)
-                  }}
-                >
-                  <Popup>
-                    <div className="text-center">
-                      <img 
-                        src={
-                          lawyer.gender === 'male'
-                            ? 'https://cdn-icons-png.flaticon.com/128/11905/11905640.png'
-                            : lawyer.gender === 'female'
-                              ? 'https://cdn-icons-png.flaticon.com/128/3611/3611204.png'
-                              : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
-                        }
-                        alt={`${lawyer.gender} lawyer`}
-                        className="w-12 h-12 rounded-full mx-auto mb-2"
-                      />
-                      <strong>{lawyer.name}</strong><br />
-                      {lawyer.specialty && <span>Specialty: {lawyer.specialty}<br /></span>}
-                      <span>Distance: {lawyer.distance_km.toFixed(2)} km</span>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          </div>
-          
-          {/* Selected lawyer details */}
-          {selectedLawyer && (
-            <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
-              <h3 className="font-medium text-amber-800 mb-2">Selected Lawyer Details</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p><span className="font-medium">Name:</span> {selectedLawyer.name}</p>
-                  {selectedLawyer.specialty && <p><span className="font-medium">Specialty:</span> {selectedLawyer.specialty}</p>}
-                  {selectedLawyer.location && <p><span className="font-medium">Location:</span> {selectedLawyer.location}</p>}
-                  {selectedLawyer.experience && <p><span className="font-medium">Experience:</span> {selectedLawyer.experience}</p>}
-                </div>
-                
-                <div>
-                  {selectedLawyer.contact && <p><span className="font-medium">Contact:</span> {selectedLawyer.contact}</p>}
-                  {selectedLawyer.address && <p><span className="font-medium">Address:</span> {selectedLawyer.address}</p>}
-                  {selectedLawyer.link && (
-                    <p>
-                      <span className="font-medium">Website:</span> 
-                      <a href={selectedLawyer.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        Visit Site
-                      </a>
-                    </p>
-                  )}
-                  <p><span className="font-medium">Distance:</span> {selectedLawyer.distance_km.toFixed(2)} km</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          {/* Lawyer markers */}
+          {searchResults.map((lawyer) => (
+            <MarkerWithPopup
+              key={`marker-${lawyer.id}`}
+              lawyer={lawyer}
+              isSelected={selectedLawyer?.id === lawyer.id}
+              onSelect={setSelectedLawyer}
+            />
+          ))}
+        </MapContainer>
       </div>
 
       {/* Custom CSS for map interactions */}
@@ -577,6 +546,12 @@ const LawyerSearchMap = React.forwardRef(({
         .selected-lawyer-icon {
           filter: drop-shadow(0 0 6px rgba(217, 119, 6, 0.8));
           animation: pulse 1.5s infinite;
+          z-index: 1000 !important;
+        }
+        
+        .active-marker {
+          filter: drop-shadow(0 0 10px rgba(217, 119, 6, 1.0)) !important;
+          animation: strongPulse 1.5s infinite !important;
         }
         
         @keyframes pulse {
@@ -594,13 +569,43 @@ const LawyerSearchMap = React.forwardRef(({
           }
         }
         
+        @keyframes strongPulse {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.2);
+            opacity: 0.9;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        
         .leaflet-container {
           font-family: inherit;
+          z-index: 0;
         }
         
         .leaflet-popup-content {
           margin: 12px;
           min-width: 150px;
+        }
+        
+        /* Fix z-index issues */
+        .leaflet-control-container .leaflet-top,
+        .leaflet-control-container .leaflet-bottom {
+          z-index: 900 !important;
+        }
+        
+        /* Force proper map dimensions */
+        .map-container,
+        .leaflet-container {
+          width: 100% !important;
+          height: 100% !important;
+          border-radius: 0.75rem;
         }
       `}</style>
     </div>

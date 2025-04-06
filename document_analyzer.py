@@ -5,6 +5,7 @@ from datetime import datetime
 import sys
 import os
 import traceback
+import time
 
 # Try to import docx library for processing DOCX files
 try:
@@ -13,6 +14,19 @@ try:
 except ImportError:
     DOCX_SUPPORT = False
     print("Warning: python-docx not installed. DOCX support will be limited.")
+
+# API keys for Gemini
+API_KEYS = [
+    "AIzaSyABP0FhpPcNotV7TqlUw38Qm0YpAovfoIY",
+    "AIzaSyBzB-FbuQimtmUEoaXUwYdGoxUwTXvMO3I"
+]
+current_key_index = 0
+
+# Get next API key for rotation
+def get_next_api_key():
+    global current_key_index
+    current_key_index = (current_key_index + 1) % len(API_KEYS)
+    return API_KEYS[current_key_index]
 
 def extract_text_from_pdf(pdf_path):
     """Extracts text from a PDF file using PyPDF2 with improved text handling."""
@@ -111,37 +125,68 @@ def generate_detailed_summary(text):
     return analyze_text_with_gemini(text, prompt)
 
 def analyze_text_with_gemini(text, prompt):
-    """Enhanced analysis with better error handling and formatting."""
+    """Enhanced analysis with better error handling and API key rotation."""
     if not text or len(text.strip()) < 50:
         print("\n[WARNING] The extracted text is too short or empty for analysis.")
         return "ERROR: The document appears to be empty or could not be properly read."
     
-    try:
-        genai.configure(api_key="AIzaSyABP0FhpPcNotV7TqlUw38Qm0YpAovfoIY")
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        # Add context about the task
-        system_instruction = "You are a professional document analyst. Provide thorough, well-structured responses with clear section headings."
-        
-        response = model.generate_content(
-            [system_instruction, prompt, text],
-            generation_config={
-                "temperature": 0.3,  # More factual responses
-                "top_p": 0.95
-            }
-        )
-        
-        # Format the response
-        return textwrap.fill(response.text, width=80, replace_whitespace=False)
-        
-    except Exception as e:
-        print("\n[WARNING] Gemini Error: {}".format(str(e)[:200]))
-        print(traceback.format_exc())
-        error_msg = "ERROR: Could not complete analysis: {}".format(str(e)[:200])
-        return error_msg
+    max_retries = len(API_KEYS) * 2  # Try each key twice
+    retries = 0
+    last_error = None
+    
+    while retries < max_retries:
+        try:
+            # Get current API key
+            api_key = API_KEYS[current_key_index]
+            
+            print(f"\nAttempt {retries+1}: Using API key ending in ...{api_key[-4:]}")
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            # Format the prompt without using system roles
+            # Merge instructions and prompt into a single user prompt
+            combined_prompt = f"""You are a professional document analyst. Provide thorough, well-structured responses with clear section headings.
+
+{prompt}
+
+Document text:
+{text}"""
+            
+            response = model.generate_content(
+                combined_prompt,
+                generation_config={
+                    "temperature": 0.3,  # More factual responses
+                    "top_p": 0.95
+                }
+            )
+            
+            # Format the response
+            return textwrap.fill(response.text, width=80, replace_whitespace=False)
+            
+        except Exception as e:
+            last_error = e
+            print(f"Error with key {api_key[-4:]} and model gemini-1.5-flash: {str(e)[:200]}")
+            
+            # Rotate API key on error
+            get_next_api_key()
+            
+            # Exponential backoff
+            wait_time = 750 * (1.5 ** retries)
+            if wait_time > 5000:
+                wait_time = 5000
+                
+            print(f"Rate limit hit. Rotating API key and waiting {wait_time}ms before retry {retries+1}")
+            time.sleep(wait_time / 1000)  # Convert to seconds
+            
+            retries += 1
+    
+    # If all retries failed
+    error_msg = f"ERROR: Could not complete analysis after {max_retries} attempts: {str(last_error)[:200]}"
+    print(f"\n[ERROR] {error_msg}")
+    return error_msg
 
 def chat_with_pdf(extracted_text):
-    """Enhanced chat interface with conversation history."""
+    """Enhanced chat interface with conversation history and API key rotation."""
     print("\n[CHAT] PDF CHAT MODE (type 'exit' to end)")
     print("Tip: Ask about specific sections, data, or request analyses")
     

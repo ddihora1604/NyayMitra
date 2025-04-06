@@ -45,6 +45,85 @@
   animation-delay: 0.4s;
 }
 
+/* Speech feedback animation */
+@keyframes speechPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+.speechFeedback {
+  animation: speechPulse 1.5s infinite ease-in-out;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  color: #92400e;
+  font-size: 0.875rem;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+/* Audio visualization for speech recognition */
+.audioWaves {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 20px;
+}
+
+.audioWave {
+  width: 3px;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 2px;
+  animation: waveAnimation 1s infinite ease-in-out;
+}
+
+.audioWave:nth-child(1) {
+  animation-delay: 0s;
+  height: 30%;
+}
+
+.audioWave:nth-child(2) {
+  animation-delay: 0.1s;
+  height: 60%;
+}
+
+.audioWave:nth-child(3) {
+  animation-delay: 0.2s;
+  height: 80%;
+}
+
+.audioWave:nth-child(4) {
+  animation-delay: 0.3s;
+  height: 40%;
+}
+
+.audioWave:nth-child(5) {
+  animation-delay: 0.4s;
+  height: 70%;
+}
+
+@keyframes waveAnimation {
+  0%, 100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
 @keyframes typingAnimation {
   0%, 100% {
     transform: scale(0.7);

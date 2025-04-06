@@ -13,7 +13,6 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from "recharts";
-import { Navbar } from "@/components/navbar";
 
 const caseData = [
   { month: 'Jan', cases: 65 },
@@ -29,8 +28,6 @@ const caseData = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 to-white">
-      <Navbar title="Dashboard" />
-      
       <div className="p-8 max-w-9xl mx-auto mt-8">
         {/* Global Justice Section */}
         <section className="mb-12 grid grid-cols-1 md:grid-cols-2 gap-8">

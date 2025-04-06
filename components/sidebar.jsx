@@ -190,8 +190,8 @@ export function Sidebar() {
               onClick={() => setIsProfileOpen(true)}
               className="w-full rounded-xl hover:bg-amber-50 transition-all flex items-center py-1.5 px-2"
             >
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 font-medium flex-shrink-0 border border-amber-200">
-                DD
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 font-medium flex-shrink-0 border border-amber-200 overflow-hidden">
+                <span className="text-sm">DD</span>
               </div>
               <div className={cn(
                 "text-left overflow-hidden transition-all duration-300 ease-in-out transform-gpu flex-grow whitespace-nowrap", 
@@ -224,8 +224,8 @@ export function Sidebar() {
           </button>
 
           <div className="flex flex-col items-center mb-6">
-            <div className="w-24 h-24 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 text-2xl font-bold mb-3 border-2 border-amber-200">
-              DD
+            <div className="w-24 h-24 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 text-2xl font-bold mb-3 border-2 border-amber-200 overflow-hidden">
+              <span>DD</span>
             </div>
             <h3 className="text-lg font-bold text-gray-800">Darshan Dihora</h3>
             <p className="text-amber-500">Legal Associate</p>
