@@ -1,0 +1,64 @@
+CONFIDENTIALITY AGREEMENT
+
+─── DOCUMENT INFO ───
+Document Title: Confidentiality Agreement
+Date: April 5, 2024
+Document ID: CA-2024-04-05-001
+
+─── PARTIES ───
+BETWEEN:
+ABC Corporation, a corporation organized and existing under the laws of Delaware, with its principal place of business at 123 Main Street, Anytown, USA 10001 (hereinafter referred to as the "Disclosing Party")
+
+AND:
+XYZ Ltd., a corporation organized and existing under the laws of California, with its principal place of business at 456 Oak Avenue, Somewhere, USA 20002 (hereinafter referred to as the "Receiving Party")
+
+─── RECITALS ───
+WHEREAS, the Disclosing Party possesses certain confidential and proprietary information relating to its business, products, services, and operations;
+WHEREAS, the Receiving Party wishes to receive such confidential information for the purpose of evaluating a potential business relationship;
+WHEREAS, the Disclosing Party is willing to disclose such information subject to the terms and conditions set forth herein;
+
+NOW, THEREFORE, in consideration of the promises and covenants contained herein, the parties agree as follows:
+
+─── DEFINITIONS ───
+1. CONFIDENTIAL INFORMATION
+"Confidential Information" means any information disclosed by the Disclosing Party to the Receiving Party, either directly or indirectly, in writing, orally or by inspection of tangible objects, including without limitation:
+(a) business plans, financial information, customer lists, marketing strategies, product roadmaps;
+(b) technical data, trade secrets, know-how, research, product plans, or products;
+(c) software, developments, inventions, processes, formulas, technology, designs, drawings, engineering, hardware configuration;
+(d) any other information designated as confidential by the Disclosing Party at the time of disclosure.
+
+─── OBLIGATIONS ───
+2. NON-DISCLOSURE OBLIGATIONS
+2.1 The Receiving Party shall hold all Confidential Information in strict confidence and shall not disclose such information to any third party without prior written consent of the Disclosing Party.
+2.2 The Receiving Party shall use the Confidential Information solely for the Purpose and shall not use the information for any other purpose.
+2.3 The Receiving Party shall protect the Confidential Information with at least the same degree of care as it uses to protect its own confidential information, but in no case less than reasonable care.
+2.4 The Receiving Party shall limit access to the Confidential Information to its employees, contractors, and agents who have a need to know such information and who have signed confidentiality agreements containing protections no less stringent than those herein.
+
+3. TERM AND TERMINATION
+3.1 This Agreement shall remain in effect for a period of five (5) years from the Effective Date.
+3.2 The obligations of confidentiality shall survive the termination of this Agreement for a period of three (3) years thereafter.
+3.3 Either party may terminate this Agreement with thirty (30) days written notice.
+
+4. GOVERNING LAW
+This Agreement shall be governed by and construed in accordance with the laws of the State of New York, without regard to its conflict of law principles.
+
+5. INDEMNIFICATION
+The Receiving Party shall indemnify and hold harmless the Disclosing Party from any damages arising from any unauthorized use or disclosure of the Confidential Information.
+
+6. LIABILITY LIMITATIONS
+In no event shall either party be liable for any indirect, incidental, special, or consequential damages. The maximum liability of either party shall not exceed $500,000.
+
+─── SIGNATURES ───
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
+
+ABC Corporation
+By: ____________________________
+Name: John Smith
+Title: Chief Executive Officer
+Date: April 5, 2024
+
+XYZ Ltd.
+By: ____________________________
+Name: Jane Doe
+Title: President
+Date: April 5, 2024 

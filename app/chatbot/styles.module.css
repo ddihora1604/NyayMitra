@@ -1,0 +1,141 @@
+.chatContainer {
+  scroll-behavior: smooth;
+}
+
+.userMessage {
+  background: linear-gradient(to right, #fff9e5, #fff3c4);
+  border-top-left-radius: 1.5rem;
+  border-top-right-radius: 1.5rem;
+  border-bottom-left-radius: 1.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.botMessage {
+  background: white;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 1.5rem;
+  border-bottom-left-radius: 1.5rem;
+  border-bottom-right-radius: 1.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.typingIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.typingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #d97706;
+  animation: typingAnimation 1.4s infinite ease-in-out;
+}
+
+.typingDot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typingDot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typingDot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingAnimation {
+  0%, 100% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.messageContent h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #b45309;
+}
+
+.messageContent h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #b45309;
+}
+
+.messageContent h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  color: #b45309;
+}
+
+.messageContent ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.messageContent ol {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.messageContent li {
+  margin-bottom: 0.25rem;
+}
+
+.messageContent p {
+  margin-bottom: 0.5rem;
+}
+
+.messageContent a {
+  color: #d97706;
+  text-decoration: underline;
+}
+
+.messageContent blockquote {
+  border-left: 3px solid #fbbf24;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+  color: #78350f;
+  background-color: #fffbeb;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.messageContent code {
+  font-family: monospace;
+  background-color: #f3f4f6;
+  padding: 0.1rem 0.2rem;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+}
+
+.messageContent pre {
+  background-color: #f3f4f6;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+.messageContent pre code {
+  background-color: transparent;
+  padding: 0;
+} 
