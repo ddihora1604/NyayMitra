@@ -1,4 +1,4 @@
-# Legal Assistance Platform
+# NyayMitra - An AI-driven Legal Service Provider Platform
 
 A comprehensive legal assistance platform designed to help users navigate complex legal issues, find legal professionals, and get guidance on various legal scenarios.
 
