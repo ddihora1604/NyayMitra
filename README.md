@@ -22,59 +22,10 @@ The platform is built with a modern tech stack, emphasizing security, scalabilit
 ## Key Features
 
 ### Case Status Tracker
-- Real-time case status lookup using CNR (Case Number Record)
-- Automated CAPTCHA solving for seamless experience
-- Timeline visualization of case proceedings
-- Multi-language response handling (English/Hindi)
-- Integration with Supreme Court and High Court APIs
-
 ### Document Analyzer
-- Legal document parsing and analysis (PDF/text)
-- Clause identification and extraction
-- Compliance checking against relevant laws
-- Summary generation of complex legal documents
-- Risk assessment highlighting potential issues
-
 ### Legal Chatbot
-- Bilingual conversational interface (English/Hindi)
-- Voice input/output with speech recognition
-- Context-aware responses to legal queries
-- Citation of relevant laws and precedents
-- Disclaimer-aware responses to avoid unauthorized legal advice
-
 ### Contract Drafting
-- Template-based document generation
-- Customizable clause library
-- Legal terminology explanation
-- Version control and document history
-- Export in multiple formats (PDF, DOCX)
-
 ### Lawyer Network
-- Geolocation-based professional search
-- Filtering by specialty, experience, and language
-- Verified professional database with reviews
-- Appointment scheduling system
-- Direct messaging capabilities
-
-## Key Concepts and Technologies Used
-
-### Core Stack
-- **Frontend**: Next.js 14, React 18, Tailwind CSS for responsive UI
-- **Backend**: Python 3.11, FastAPI for high-performance API endpoints, Celery for task queuing
-- **Database**: PostgreSQL for relational data, Redis for caching
-- **AI/ML**: Hugging Face Transformers, SpaCy for NLP tasks
-- **Authentication**: JWT-based auth system with role-based access control
-
-### AI Technologies
-- **Natural Language Processing**: For document analysis and chatbot functionality
-- **Speech Recognition**: For voice input in the legal assistant
-- **Machine Learning**: For case outcome prediction and document classification
-- **Computer Vision**: For CAPTCHA solving in case status tracking
-
-### External APIs
-- **Court APIs**: Integration with Indian judicial system databases
-- **Mapping Services**: For lawyer geolocation features
-- **Language Models**: Integration with models like Gemini for advanced NLP tasks
 
 ## Detailed Component Explanations
 
@@ -115,6 +66,26 @@ The system includes:
 - Appointment scheduling capabilities
 - Direct messaging between users and lawyers
 
+## Key Concepts and Technologies Used
+
+### Core Stack
+- **Frontend**: Next.js 14, React 18, Tailwind CSS for responsive UI
+- **Backend**: Python 3.11, FastAPI for high-performance API endpoints, Celery for task queuing
+- **Database**: PostgreSQL for relational data, Redis for caching
+- **AI/ML**: Hugging Face Transformers, SpaCy for NLP tasks
+- **Authentication**: JWT-based auth system with role-based access control
+
+### AI Technologies
+- **Natural Language Processing**: For document analysis and chatbot functionality
+- **Speech Recognition**: For voice input in the legal assistant
+- **Machine Learning**: For case outcome prediction and document classification
+- **Computer Vision**: For CAPTCHA solving in case status tracking
+
+### External APIs
+- **Court APIs**: Integration with Indian judicial system databases
+- **Mapping Services**: For lawyer geolocation features
+- **Language Models**: Integration with models like Gemini for advanced NLP tasks
+
 ## Getting Started
 
 ### Prerequisites
@@ -126,21 +97,6 @@ The system includes:
 
 ### Installation
 
-#### Option 1: Using Docker (Recommended)
-```bash
-# Clone the repository
-git clone https://github.com/your-org/NyayMitra.git
-cd NyayMitra
-
-# Create .env file from example
-cp .env.example .env
-# Edit .env file to add your API keys
-
-# Start the application using Docker Compose
-docker-compose up
-```
-
-#### Option 2: Manual Setup
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/NyayMitra.git
@@ -200,7 +156,40 @@ uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 npm run dev
 ```
 
-Access the application at http://localhost:3000
+## System Architecture
+
+```mermaid
+graph TD
+    User[User] --> Frontend[Next.js Frontend]
+    Frontend --> Auth[Authentication]
+    Frontend --> Features[Feature Modules]
+    
+    Features --> CaseTracker[Case Status Tracker]
+    Features --> DocAnalyzer[Document Analyzer]
+    Features --> LegalChat[Legal Chatbot]
+    Features --> LawyerSearch[Lawyer Search]
+    Features --> ContractGen[Contract Generator]
+    
+    CaseTracker --> FastAPI[FastAPI Backend]
+    DocAnalyzer --> FastAPI
+    LegalChat --> FastAPI
+    LawyerSearch --> FastAPI
+    ContractGen --> FastAPI
+    
+    FastAPI --> ExternalAPIs[External APIs]
+    FastAPI --> AI[AI/ML Models]
+    FastAPI --> DB[(Database)]
+    
+    ExternalAPIs --> Courts[Court APIs]
+    ExternalAPIs --> Maps[Mapping Services]
+    
+    AI --> NLP[NLP Models]
+    AI --> Speech[Speech Recognition]
+    AI --> CV[Computer Vision]
+    
+    DB --> PostgreSQL[(PostgreSQL)]
+    DB --> Redis[(Redis Cache)]
+```
 
 ## Project Directory Structure
 ```
@@ -238,92 +227,3 @@ NyayMitra/
 ├── public/              # Static assets
 └── secrets/             # Configuration files (gitignored)
 ```
-
-## System Architecture
-
-```mermaid
-graph TD
-    User[User] --> Frontend[Next.js Frontend]
-    Frontend --> Auth[Authentication]
-    Frontend --> Features[Feature Modules]
-    
-    Features --> CaseTracker[Case Status Tracker]
-    Features --> DocAnalyzer[Document Analyzer]
-    Features --> LegalChat[Legal Chatbot]
-    Features --> LawyerSearch[Lawyer Search]
-    Features --> ContractGen[Contract Generator]
-    
-    CaseTracker --> FastAPI[FastAPI Backend]
-    DocAnalyzer --> FastAPI
-    LegalChat --> FastAPI
-    LawyerSearch --> FastAPI
-    ContractGen --> FastAPI
-    
-    FastAPI --> ExternalAPIs[External APIs]
-    FastAPI --> AI[AI/ML Models]
-    FastAPI --> DB[(Database)]
-    
-    ExternalAPIs --> Courts[Court APIs]
-    ExternalAPIs --> Maps[Mapping Services]
-    
-    AI --> NLP[NLP Models]
-    AI --> Speech[Speech Recognition]
-    AI --> CV[Computer Vision]
-    
-    DB --> PostgreSQL[(PostgreSQL)]
-    DB --> Redis[(Redis Cache)]
-```
-
-## Component Workflow
-
-### Document Analysis Flow
-```mermaid
-graph TD
-    A[User Uploads Document] --> B{Document Type?}
-    B -->|Contract| C[Clause Analysis]
-    B -->|Case File| D[Status Check]
-    B -->|Legal Notice| E[Risk Assessment]
-    C --> F[Compliance Report]
-    D --> G[Timeline Visualization]
-    E --> H[Response Recommendations]
-    F --> I[Document Summary]
-    G --> I
-    H --> I
-```
-
-### Case Status Tracking Flow
-```mermaid
-graph TD
-    A[User Enters CNR] --> B[Backend Fetches CAPTCHA]
-    B --> C{Selenium Available?}
-    C -->|Yes| D[Automated CAPTCHA Solving]
-    C -->|No| E[Manual CAPTCHA Entry]
-    D --> F[API Request to Court System]
-    E --> F
-    F --> G[Parse Court Response]
-    G --> H[Format Case Timeline]
-    H --> I[Display to User]
-```
-
-## Contributing
-Contributions to NyayMitra are welcome! Please follow these steps:
-
-```bash
-# Fork the repository
-
-# Create a feature branch
-git checkout -b feature/your-feature-name
-
-# Make your changes
-
-# Run tests
-npm test
-
-# Submit a pull request
-```
-
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-Built with ❤️ for accessible justice
