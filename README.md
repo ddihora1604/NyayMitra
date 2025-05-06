@@ -1,161 +1,329 @@
-# NyayMitra - An AI-driven Legal Service Provider Platform
+# NyayMitra - AI-Driven Legal Assistance Platform
 
-A comprehensive legal assistance platform designed to help users navigate complex legal issues, find legal professionals, and get guidance on various legal scenarios.
+## Introduction
+NyayMitra ("Justice Friend" in Hindi) is an AI-powered legal assistance platform designed to bridge the gap between Indian citizens and legal services. By combining judicial data integration with modern AI capabilities, it provides accessible legal resources, case tracking, document analysis, and lawyer matching services to make the legal system more approachable for everyone.
 
-## Table of Contents
+## Brief Description
+A comprehensive legal technology solution that leverages artificial intelligence to simplify legal processes, provide guidance in multiple languages, analyze legal documents, track court cases, and connect users with appropriate legal professionals based on their specific needs.
 
-- [Overview](#overview)
-- [Features](#features)
-- [Getting Started](#getting-started)
-- [Key Components](#key-components)
-- [Pages](#pages)
-- [Technologies Used](#technologies-used)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
+## Project Overview
+NyayMitra addresses the challenges many citizens face when navigating India's complex legal system by providing:
 
-## Overview
+- **Real-time Case Status Tracking**: Integration with Indian court systems to provide up-to-date information on case proceedings
+- **AI-Powered Document Analysis**: Natural Language Processing to interpret and explain legal documents
+- **Multilingual Support**: Legal guidance in both English and Hindi to improve accessibility
+- **Geolocation-Based Lawyer Search**: Connect users with legal professionals based on specialty and location
+- **Interactive Process Visualization**: Flowcharts and diagrams to explain legal procedures
+- **Legal Chatbot Assistant**: AI-driven conversational interface for answering legal questions
+- **Contract Generation**: Template-based legal document creation
 
-This platform provides various tools and resources for users seeking legal assistance. From interactive flowcharts guiding legal pathways to lawyer search functionality and legal document analysis, the system offers comprehensive support for those navigating legal issues.
+The platform is built with a modern tech stack, emphasizing security, scalability, and user experience while making legal assistance more accessible to all segments of society.
 
-## Features
+## Key Features
 
-- **Dashboard**: Central hub with overview of all platform features
-- **Legal Pathways**: Interactive flowcharts showing step-by-step guidance for common legal scenarios
-- **Find Lawyer**: Search for lawyers by location and specialty with interactive map
-- **Legal Assistant Chatbot**: AI-powered chatbot providing legal information and guidance
-- **Document Analyzer**: Tool to analyze legal documents and extract key information
-- **Case Status Tracking**: Monitor the progress of legal cases
-- **Contracts Drafting**: Templates and guidance for drafting legal contracts
-- **News & Insights**: Latest legal news and analysis
+### Case Status Tracker
+- Real-time case status lookup using CNR (Case Number Record)
+- Automated CAPTCHA solving for seamless experience
+- Timeline visualization of case proceedings
+- Multi-language response handling (English/Hindi)
+- Integration with Supreme Court and High Court APIs
+
+### Document Analyzer
+- Legal document parsing and analysis (PDF/text)
+- Clause identification and extraction
+- Compliance checking against relevant laws
+- Summary generation of complex legal documents
+- Risk assessment highlighting potential issues
+
+### Legal Chatbot
+- Bilingual conversational interface (English/Hindi)
+- Voice input/output with speech recognition
+- Context-aware responses to legal queries
+- Citation of relevant laws and precedents
+- Disclaimer-aware responses to avoid unauthorized legal advice
+
+### Contract Drafting
+- Template-based document generation
+- Customizable clause library
+- Legal terminology explanation
+- Version control and document history
+- Export in multiple formats (PDF, DOCX)
+
+### Lawyer Network
+- Geolocation-based professional search
+- Filtering by specialty, experience, and language
+- Verified professional database with reviews
+- Appointment scheduling system
+- Direct messaging capabilities
+
+## Key Concepts and Technologies Used
+
+### Core Stack
+- **Frontend**: Next.js 14, React 18, Tailwind CSS for responsive UI
+- **Backend**: Python 3.11, FastAPI for high-performance API endpoints, Celery for task queuing
+- **Database**: PostgreSQL for relational data, Redis for caching
+- **AI/ML**: Hugging Face Transformers, SpaCy for NLP tasks
+- **Authentication**: JWT-based auth system with role-based access control
+
+### AI Technologies
+- **Natural Language Processing**: For document analysis and chatbot functionality
+- **Speech Recognition**: For voice input in the legal assistant
+- **Machine Learning**: For case outcome prediction and document classification
+- **Computer Vision**: For CAPTCHA solving in case status tracking
+
+### External APIs
+- **Court APIs**: Integration with Indian judicial system databases
+- **Mapping Services**: For lawyer geolocation features
+- **Language Models**: Integration with models like Gemini for advanced NLP tasks
+
+## Detailed Component Explanations
+
+### Case Status Tracker
+The Case Status component integrates with the Indian court system's APIs to fetch real-time case information. It features an automated CAPTCHA solving mechanism using Selenium and ChromeDriver, with a fallback to a simpler CAPTCHA when needed. The component is built with internationalization support (i18n) for both English and Hindi interfaces.
+
+The backend uses FastAPI to create endpoints that handle CNR number validation, CAPTCHA processing, and court data retrieval. The frontend presents this information in an intuitive timeline format, showing the progression of the case through various stages of the judicial process.
+
+### Document Analyzer
+This component uses NLP techniques to process legal documents uploaded by users. It can handle various file formats including PDF and text files. The analyzer identifies key clauses, legal terminology, and potential compliance issues within documents.
+
+The system employs a multi-stage processing pipeline:
+1. Text extraction from documents
+2. Legal entity recognition using custom-trained models
+3. Clause classification and categorization
+4. Risk assessment based on identified clauses
+5. Generation of plain-language summaries
+
+Users can also ask specific questions about the document, with the system providing contextual answers based on the document's content.
+
+### Legal Chatbot
+The conversational AI assistant provides guidance on legal matters through a chat interface. It supports both text and voice interactions, with speech recognition capabilities for accessibility. The chatbot is trained on Indian legal frameworks and can provide information on various legal topics.
+
+Key features include:
+- Context-aware responses that maintain conversation history
+- Integration with legal databases for accurate information
+- Clear disclaimers to distinguish between information and legal advice
+- Multilingual support with automatic language detection
+- Voice input/output for accessibility
+
+### Lawyer Search System
+This geolocation-based system helps users find legal professionals based on specialty, location, and experience. It integrates mapping services to visualize lawyer locations and provides filtering options to narrow down search results.
+
+The system includes:
+- Verified lawyer profiles with specialization information
+- User reviews and ratings
+- Distance-based search functionality
+- Appointment scheduling capabilities
+- Direct messaging between users and lawyers
 
 ## Getting Started
 
 ### Prerequisites
-
-- Node.js (v14 or later)
-- npm or yarn
+- Node.js 18+ for frontend
+- Python 3.11 for backend services
+- PostgreSQL 15 for database
+- Chrome browser (for case status feature)
+- Docker and Docker Compose (recommended for easy setup)
 
 ### Installation
 
-1. Clone the repository:
-   ```
-   git clone [repository-url]
-   ```
+#### Option 1: Using Docker (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/your-org/NyayMitra.git
+cd NyayMitra
 
-2. Install dependencies:
-   ```
-   npm install
-   ```
+# Create .env file from example
+cp .env.example .env
+# Edit .env file to add your API keys
 
-3. Set up environment variables:
-   Copy `.env.example` to `.env.local` and fill in:
-   - API keys for services like GROQ, Mapbox, etc.
-
-4. Start the development server:
-   ```
-   npm run dev
-   ```
-
-5. Open [http://localhost:3000](http://localhost:3000) to view the application
-
-## Key Components
-
-### Legal Pathway Guide
-
-The Legal Pathway component provides interactive flowcharts for different legal scenarios, helping users understand the steps involved in resolving common legal issues.
-
-Key features:
-- Multiple categories of legal scenarios
-- Interactive flowcharts with draggable nodes
-- Step-by-step guidance with detailed information
-- Visual differentiation of decision points and actions
-
-### Lawyer Search with Map
-
-Find lawyers based on location and specialty with an interactive map interface.
-
-Key features:
-- Searchable directory of legal professionals
-- Map-based visualization of lawyer locations
-- Filtering by specialty, experience, and location
-- Detailed lawyer profiles with contact information
-
-### Legal Assistant Chatbot
-
-AI-powered conversational interface for answering legal questions.
-
-Key features:
-- Natural language processing for legal queries
-- Speech recognition for voice input
-- Text-to-speech for audible responses
-- Multi-language support
-
-## Pages
-
-### Dashboard (`/dashboard`)
-The main landing page after login, providing access to all platform features.
-
-### Legal Pathway (`/pathway`)
-Interactive flowcharts for different legal scenarios.
-
-### Find Lawyer (`/find-lawyer`)
-Search for legal professionals with map-based results.
-
-### Chatbot (`/chatbot`)
-AI assistant for legal questions and guidance.
-
-### Document Analyzer (`/document-analyzer`)
-Tool for analyzing legal documents.
-
-### Case Status (`/case-status`)
-Track progress of legal cases.
-
-### Contracts Draft (`/contracts-draft`)
-Templates and guidance for legal contracts.
-
-### News & Insights (`/news-insights`)
-Latest legal news and analysis.
-
-## Technologies Used
-
-- **Framework**: Next.js (React)
-- **Styling**: Tailwind CSS
-- **Maps**: Leaflet
-- **Flowcharts**: React Flow (@xyflow/react)
-- **UI Components**: Radix UI, Lucide React (icons)
-- **AI Integration**: GROQ API
-- **Data Visualization**: Various React libraries
-
-## Project Structure
-
+# Start the application using Docker Compose
+docker-compose up
 ```
-/
-├── app/                     # Next.js 13+ app directory
-│   ├── api/                 # API routes
-│   ├── chatbot/             # Legal chatbot page
-│   ├── dashboard/           # Dashboard page
-│   ├── document-analyzer/   # Document analysis page
-│   ├── find-lawyer/         # Lawyer search page
-│   ├── pathway/             # Legal pathway page
-│   └── ...
-├── components/              # Reusable React components
-│   ├── ui/                  # UI components
-│   ├── LawyerSearchMap.tsx  # Map component for lawyer search
-│   ├── Chatbot.jsx          # Chatbot component
-│   └── ...
-├── lib/                     # Utility functions and helpers
-├── public/                  # Static assets
-├── category.js              # Category definitions for pathway
-├── Flow.jsx                 # Flow chart component
-└── ...
+
+#### Option 2: Manual Setup
+```bash
+# Clone the repository
+git clone https://github.com/your-org/NyayMitra.git
+cd NyayMitra
+
+# Frontend setup
+npm install
+
+# Backend setup
+cd backend
+python -m venv venv
+
+# On Windows
+venv\Scripts\activate
+
+# On Linux/Mac
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+# Return to project root
+cd ..
+
+# Create .env file from example
+cp .env.example .env
+# Edit .env file to add your API keys
+```
+
+### Configuration
+Create a `.env` file in the project root with the following variables:
+```
+# API Keys
+MAPBOX_API_KEY=your_mapbox_key
+GROQ_API_KEY=your_groq_key
+SUPREME_COURT_API_KEY=your_court_api_key
+
+# Database Configuration
+DATABASE_URL=postgresql://user:password@localhost:5432/nyaymitra
+REDIS_URL=redis://localhost:6379/0
+
+# Application Settings
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_ENABLE_SPEECH=true
+```
+
+### Running the Application
+
+#### Starting the Backend
+```bash
+# From the backend directory with virtual environment activated
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+```
+
+#### Starting the Frontend
+```bash
+# From the project root
+npm run dev
+```
+
+Access the application at http://localhost:3000
+
+## Project Directory Structure
+```
+NyayMitra/
+├── app/                 # Next.js application
+│   ├── api/             # API routes
+│   │   ├── case-status/  # Case status API endpoints
+│   │   ├── document-analyzer/ # Document analysis endpoints
+│   │   └── find-lawyer/ # Lawyer search endpoints
+│   ├── case-status/     # Case status feature
+│   ├── chatbot/         # Legal chatbot interface
+│   ├── contracts-draft/ # Contract generation
+│   ├── dashboard/       # User dashboard
+│   ├── document-analyzer/ # Document analysis UI
+│   ├── find-lawyer/     # Lawyer search interface
+│   ├── legal-assistance/ # Legal assistance hub
+│   └── pathway/         # Legal process visualization
+├── backend/             # Python services
+│   ├── app.py           # FastAPI entrypoint
+│   ├── requirements.txt # Python dependencies
+│   └── run.sh           # Backend startup script
+├── case-status-component/ # CNR lookup UI component
+├── components/          # Shared React components
+│   ├── legal-assistant/ # Legal assistance components
+│   │   ├── ContractDrafting.jsx
+│   │   ├── LegalAdvice.jsx
+│   │   └── LegalResearch.jsx
+│   ├── ui/              # UI component library
+│   └── Chatbot.jsx      # Chatbot component
+├── lib/                 # Shared utilities
+│   ├── hooks/           # Custom React hooks
+│   │   ├── useSpeechRecognition.js
+│   │   └── useSpeechSynthesis.js
+│   └── utils/           # Utility functions
+├── public/              # Static assets
+└── secrets/             # Configuration files (gitignored)
+```
+
+## System Architecture
+
+```mermaid
+graph TD
+    User[User] --> Frontend[Next.js Frontend]
+    Frontend --> Auth[Authentication]
+    Frontend --> Features[Feature Modules]
+    
+    Features --> CaseTracker[Case Status Tracker]
+    Features --> DocAnalyzer[Document Analyzer]
+    Features --> LegalChat[Legal Chatbot]
+    Features --> LawyerSearch[Lawyer Search]
+    Features --> ContractGen[Contract Generator]
+    
+    CaseTracker --> FastAPI[FastAPI Backend]
+    DocAnalyzer --> FastAPI
+    LegalChat --> FastAPI
+    LawyerSearch --> FastAPI
+    ContractGen --> FastAPI
+    
+    FastAPI --> ExternalAPIs[External APIs]
+    FastAPI --> AI[AI/ML Models]
+    FastAPI --> DB[(Database)]
+    
+    ExternalAPIs --> Courts[Court APIs]
+    ExternalAPIs --> Maps[Mapping Services]
+    
+    AI --> NLP[NLP Models]
+    AI --> Speech[Speech Recognition]
+    AI --> CV[Computer Vision]
+    
+    DB --> PostgreSQL[(PostgreSQL)]
+    DB --> Redis[(Redis Cache)]
+```
+
+## Component Workflow
+
+### Document Analysis Flow
+```mermaid
+graph TD
+    A[User Uploads Document] --> B{Document Type?}
+    B -->|Contract| C[Clause Analysis]
+    B -->|Case File| D[Status Check]
+    B -->|Legal Notice| E[Risk Assessment]
+    C --> F[Compliance Report]
+    D --> G[Timeline Visualization]
+    E --> H[Response Recommendations]
+    F --> I[Document Summary]
+    G --> I
+    H --> I
+```
+
+### Case Status Tracking Flow
+```mermaid
+graph TD
+    A[User Enters CNR] --> B[Backend Fetches CAPTCHA]
+    B --> C{Selenium Available?}
+    C -->|Yes| D[Automated CAPTCHA Solving]
+    C -->|No| E[Manual CAPTCHA Entry]
+    D --> F[API Request to Court System]
+    E --> F
+    F --> G[Parse Court Response]
+    G --> H[Format Case Timeline]
+    H --> I[Display to User]
 ```
 
 ## Contributing
+Contributions to NyayMitra are welcome! Please follow these steps:
 
-1. Create a branch for your feature
-2. Make your changes
-3. Submit a pull request with a clear description of the changes
+```bash
+# Fork the repository
+
+# Create a feature branch
+git checkout -b feature/your-feature-name
+
+# Make your changes
+
+# Run tests
+npm test
+
+# Submit a pull request
+```
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
-
-Built with ❤️ for making legal assistance more accessible to everyone. 
+Built with ❤️ for accessible justice
