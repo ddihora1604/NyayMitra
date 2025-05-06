@@ -21,13 +21,35 @@ The platform is built with a modern tech stack, emphasizing security, scalabilit
 
 ## Key Features
 
-### Case Status Tracker
-### Document Analyzer
-### Legal Chatbot
-### Contract Drafting
-### Lawyer Network
+1. Legal Advisor
+2. Legal Researcher
+3. Case Status Tracker
+4. Document Analyzer
+5. Legal Chatbot
+6. Contract Drafting
+7. Lawyer Network
 
 ## Detailed Component Explanations
+
+### Legal Advisor
+The Legal Advisor agent provides expert legal insights tailored to individual or organizational needs. It assists in drafting and reviewing legal documents, offers strategic counsel for dispute resolution, and ensures decisions align with applicable laws. The advisor dynamically references Indian legal frameworks and relevant case laws to deliver contextually accurate guidance.
+
+Key features include:
+1. Drafting and validation of legal agreements and notices
+2. Real-time compliance checks for business operations
+3. Scenario-based legal recommendations
+4. Integration with statutory databases for up-to-date legal norms
+5. Multilingual support for English and Hindi legal 
+
+### Legal Researcher
+The Legal Researcher agent conducts in-depth legal analysis on any topic provided by the user. It leverages advanced NLP and legal information retrieval techniques to deliver comprehensive insights, referencing relevant case laws, statutes, regulations, and academic opinions. Whether it's a broad legal principle or a niche subject, the system compiles detailed, well-structured findings to support legal understanding and decision-making.
+
+The Legal Researcher includes:
+1. Deep-dive research on user-defined legal topics
+2. Compilation of relevant statutes, judgments, and commentariesStatute comparison across jurisdictions
+3. Smart summarization of lengthy legal texts
+4. Topic clustering and citation tracking
+5. Exportable research reports in structured formats
 
 ### Case Status Tracker
 The Case Status component integrates with the Indian court system's APIs to fetch real-time case information. It features an automated CAPTCHA solving mechanism using Selenium and ChromeDriver, with a fallback to a simpler CAPTCHA when needed. The component is built with internationalization support (i18n) for both English and Hindi interfaces.
@@ -164,12 +186,16 @@ graph TD
     Frontend --> Auth[Authentication]
     Frontend --> Features[Feature Modules]
     
+    Features --> LegalAdvisor[Legal Advisor]
+    Features --> LegalResearcher[Legal Researcher]
     Features --> CaseTracker[Case Status Tracker]
     Features --> DocAnalyzer[Document Analyzer]
     Features --> LegalChat[Legal Chatbot]
     Features --> LawyerSearch[Lawyer Search]
     Features --> ContractGen[Contract Generator]
     
+    LegalAdvisor --> FastAPI
+    LegalResearcher --> FastAPI
     CaseTracker --> FastAPI[FastAPI Backend]
     DocAnalyzer --> FastAPI
     LegalChat --> FastAPI
