@@ -1,6 +1,6 @@
 # NyayMitra - AI-Driven Legal Assistance Platform
 
-## Prototype
+Prototype: 
 https://drive.google.com/file/d/1_R1p5gsIdxzoO8-1VLlps4H9FdN7yr4N/view?usp=drive_link
 ## Introduction
 NyayMitra ("Justice Friend" in Hindi) is an AI-powered legal assistance platform designed to bridge the gap between Indian citizens and legal services. By combining judicial data integration with modern AI capabilities, it provides accessible legal resources, case tracking, document analysis, and lawyer matching services to make the legal system more approachable for everyone.
