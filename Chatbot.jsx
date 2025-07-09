@@ -100,7 +100,7 @@ const Chatbot = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "llama3-70b-8192",
+            model: "gemma2-9b-it",
             messages: newMessages.map((msg) => ({
               role: msg.role,
               content: msg.content,
