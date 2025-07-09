@@ -1,7 +1,12 @@
 # NyayMitra - AI-Driven Legal Assistance Platform
 
+<<<<<<< HEAD
 Prototype: https://youtu.be/SnLhkuxrAQE?si=SyMnFLTcrbIK6PIF
 
+=======
+Prototype: 
+https://youtu.be/SnLhkuxrAQE?si=LCmbzBFQD5w2_iBg
+>>>>>>> 96ed583d4ae7922c4ff95ca47bdac7a03b203d19
 ## Introduction
 NyayMitra is an AI-powered legal assistance platform designed to bridge the gap between Indian citizens and legal services. By combining judicial data integration with modern AI capabilities, it provides accessible legal resources, case tracking, document analysis, and lawyer matching services to make the legal system more approachable for everyone.
 
