@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-// Import the Graphviz component - you'll need to install this package
+// Import the Graphviz component - you'll need to install this package!
 import { Graphviz } from 'graphviz-react';
 
 const LegalAdvice = () => {
