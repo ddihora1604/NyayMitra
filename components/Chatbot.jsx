@@ -7,8 +7,8 @@ import styles from "../app/chatbot/styles.module.css";
 import useSpeechRecognition from "@/lib/hooks/useSpeechRecognition";
 import useSpeechSynthesis from "@/lib/hooks/useSpeechSynthesis";
 
-// Import API key from environment
-import { GROQ_API_KEY } from "../secrets/env.js";
+// Get API key from environment variable
+const GROQ_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY;
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
