@@ -12,7 +12,7 @@ const LegalAdvice = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const GEMINI_API_KEY = "AIzaSyABP0FhpPcNotV7TqlUw38Qm0YpAovfoIY"; // Replace with your actual API key or use environment variables
+  const GEMINI_API_KEY = "AIzaSyCLoBWpcOAWurtUAWS8nL9haUtt17u15Vg"; // Replace with your actual API key or use environment variables
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
   const handleGetAdvice = async () => {
@@ -27,7 +27,7 @@ const LegalAdvice = () => {
     setFlowchartDot("");
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
       const prompt = `
         You are a legal advisor specializing in Indian law. Provide comprehensive yet practical legal advice 
@@ -69,7 +69,7 @@ const LegalAdvice = () => {
     setError(null);
   
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   
       const flowchartPrompt = `
         Analyze the following legal advice text and generate a flowchart in Graphviz DOT language syntax 

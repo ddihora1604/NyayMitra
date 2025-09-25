@@ -20,8 +20,8 @@ const getNextApiKey = () => {
 };
 
 // Primary and fallback models
-const PRIMARY_MODEL = 'gemini-1.5-flash';
-const FALLBACK_MODEL = 'gemini-1.5-flash'; // Fallback to an older model with different quota
+const PRIMARY_MODEL = 'gemini-2.5-flash';
+const FALLBACK_MODEL = 'gemini-2.5-flash'; // Fallback to an older model with different quota
 
 // Max tokens to send to prevent overages
 const MAX_INPUT_TOKENS = 8000;

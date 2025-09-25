@@ -202,7 +202,7 @@ const LawyerSearchMap = () => {
       ${JSON.stringify(simplifiedResults, null, 2)}
       `;
       const geminiApiKey = "AIzaSyABP0FhpPcNotV7TqlUw38Qm0YpAovfoIY";
-      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

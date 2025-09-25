@@ -17,7 +17,7 @@ const LegalResearch = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const GEMINI_API_KEY = "AIzaSyABP0FhpPcNotV7TqlUw38Qm0YpAovfoIY";
+  const GEMINI_API_KEY = "AIzaSyCLoBWpcOAWurtUAWS8nL9haUtt17u15Vg";
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
   const handleGenerateReport = async () => {
@@ -31,7 +31,7 @@ const LegalResearch = () => {
     setSuccess(false);
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
       const prompt = `
         Conduct thorough legal research on the topic '${researchTopic}', focusing specifically on Indian law. 

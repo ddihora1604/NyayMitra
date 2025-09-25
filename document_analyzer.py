@@ -141,7 +141,7 @@ def analyze_text_with_gemini(text, prompt):
             
             print(f"\nAttempt {retries+1}: Using API key ending in ...{api_key[-4:]}")
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.5-flash')
             
             # Format the prompt without using system roles
             # Merge instructions and prompt into a single user prompt
@@ -165,7 +165,7 @@ Document text:
             
         except Exception as e:
             last_error = e
-            print(f"Error with key {api_key[-4:]} and model gemini-1.5-flash: {str(e)[:200]}")
+            print(f"Error with key {api_key[-4:]} and model gemini-2.5-flash: {str(e)[:200]}")
             
             # Rotate API key on error
             get_next_api_key()

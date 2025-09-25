@@ -21,7 +21,7 @@ const ContractDrafting = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const GEMINI_API_KEY = "AIzaSyABP0FhpPcNotV7TqlUw38Qm0YpAovfoIY";
+  const GEMINI_API_KEY = "AIzaSyCLoBWpcOAWurtUAWS8nL9haUtt17u15Vg";
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
   const handleDraftContract = async () => {
@@ -35,7 +35,7 @@ const ContractDrafting = () => {
     setSuccess(false);
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
       const prompt = `
         You are a legal contract drafter specializing in Indian contract law. 

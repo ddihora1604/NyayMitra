@@ -6,8 +6,8 @@ export const dynamic = 'force-dynamic';
 // API keys for external services
 const SERPER_API_KEY = "00bed6629055f888ce9b8a4d47d1f17dab6214d7";
 const GEMINI_API_KEYS = [
-  "AIzaSyABP0FhpPcNotV7TqlUw38Qm0YpAovfoIY",
-  "AIzaSyBzB-FbuQimtmUEoaXUwYdGoxUwTXvMO3I"
+  "AIzaSyCLoBWpcOAWurtUAWS8nL9haUtt17u15Vg",
+  "AIzaSyCLoBWpcOAWurtUAWS8nL9haUtt17u15Vg"
 ];
 
 // Track current API key index for rotation
@@ -96,7 +96,7 @@ Here are the search results to analyze:
         const currentApiKey = GEMINI_API_KEYS[currentKeyIndex];
         
         const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${currentApiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentApiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
